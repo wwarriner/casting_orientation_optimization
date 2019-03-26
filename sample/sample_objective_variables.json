@@ -1,5 +1,14 @@
 [
 	{
+		"title": "uc_count",
+		"display": "Undercut, Count",
+		"type": "ordinal",
+		"process": "Undercut",
+		"property": "count",
+		"metric": "property",
+		"notes": "count of undercuts"
+	},
+	{
 		"title": "pp_projected_area_reciprocal",
 		"display": "Parting, Reciprocal of Projected Area",
 		"type": "continuous",
