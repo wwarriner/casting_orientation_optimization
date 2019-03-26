@@ -15,6 +15,7 @@ classdef DataExtractor < handle
             finish = size( data_table, 2 );
             count = finish - start + 1;
             
+            assert( ov.get_objective_count() == count );
             assert( numel( titles ) == count );
             assert( numel( tags ) == count );
             

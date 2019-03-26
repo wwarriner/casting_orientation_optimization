@@ -20,16 +20,16 @@ classdef (Sealed) ObjectiveVariables < handle
         end
         
         
-        function titles = get_display_titles( obj )
+        function count = get_objective_count( obj )
             
-            titles = obj.variables.display;
+            count = size( obj.variables, 1 );
             
         end
         
         
-        function title = get_display_title( obj, index )
+        function titles = get_tags( obj )
             
-            title = obj.variabls.display{ index };
+            titles = obj.variables.tag;
             
         end
         
@@ -41,23 +41,9 @@ classdef (Sealed) ObjectiveVariables < handle
         end
         
         
-        function title = get_title( obj, index )
-            
-            title = obj.variables.title{ index };
-            
-        end
-        
-        
         function methods = get_interpolation_methods( obj )
             
             methods = obj.variables.interpolation_method;
-            
-        end
-        
-        
-        function method = get_interpolation_method( obj, index )
-            
-            method = obj.variables.interpolation_method{ index };
             
         end
         
@@ -73,13 +59,6 @@ classdef (Sealed) ObjectiveVariables < handle
             process = retrieval_function( process ); %#ok<NASGU>
             property = obj.get_property( index );
             value = eval( sprintf( 'metric_fn( process.%s )', property ) );
-            
-        end
-        
-        
-        function count = get_objective_count( obj )
-            
-            count = size( obj.variables, 1 );
             
         end
         
