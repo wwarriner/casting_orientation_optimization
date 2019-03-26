@@ -6,7 +6,8 @@ classdef VisualizationWidget < handle
                 figure_handle, ...
                 corner_pos, ...
                 font_size, ...
-                button_callback ...
+                button_callback, ...
+                visualization_generator ...
                 )
             
             h = uicontrol();
@@ -22,21 +23,19 @@ classdef VisualizationWidget < handle
             h.Parent = figure_handle;
             
             obj.button_handle = h;
+            obj.visualization_generator = visualization_generator;
             
         end
         
         
-        function figure_handle = generate_visualization( ...
-                obj, ...
-                point, ...
-                response_data ...
-                )
+        function figure_handle = generate_visualization( obj, angles )
             
             figure_handle = figure();
+            [ PHI_INDEX, THETA_INDEX ] = unit_sphere_plot_indices();
             figure_handle.Name = sprintf( ...
                 'Visualization with @X: %.2f and @Y: %.2f', ...
-                rad2deg( point( 1 ) ), ...
-                rad2deg( point( 2 ) ) ...
+                rad2deg( angles( PHI_INDEX ) ), ...
+                rad2deg( angles( THETA_INDEX ) ) ...
                 );
             figure_handle.NumberTitle = 'off';
             figure_handle.MenuBar = 'none';
@@ -48,45 +47,8 @@ classdef VisualizationWidget < handle
             axh = axes( figure_handle );
             axh.Color = 'none';
             hold( axh, 'on' );
-            rotated_component_fv = response_data.get_rotated_component_fv( point );
-            rch = patch( axh, rotated_component_fv, 'SpecularStrength', 0.0 );
-            rch.FaceColor = [ 0.9 0.9 0.9 ];
-            rch.EdgeColor = 'none';
             
-            rotated_feeder_fvs = response_data.get_rotated_feeder_fvs( point );
-            for i = 1 : numel( rotated_feeder_fvs )
-                
-                rfh = patch( ...
-                    axh, ...
-                    rotated_feeder_fvs{ i }, ...
-                    'SpecularStrength', ...
-                    0.0 ...
-                    );
-                rfh.FaceColor = [ 0.75 0.0 0.0 ];
-                rfh.FaceAlpha = 0.5;
-                rfh.EdgeColor = 'none';
-                
-            end
-            
-            all_fvs = [ rotated_feeder_fvs; rotated_component_fv ];
-            min_point = [ 0 0 0 ];
-            max_point = [ 0 0 0 ];
-            for i = 1 : numel( all_fvs )
-                
-                curr_min_point = min( all_fvs{ i }.vertices );
-                min_point = min( [ curr_min_point; min_point ] );
-                
-                curr_max_point = max( all_fvs{ i }.vertices );
-                max_point = max( [ curr_max_point; max_point ] );
-                
-            end
-            cor_point = response_data.get_center_of_rotation();
-            
-            pa = PrettyAxes3D( min_point, max_point, cor_point );
-            pa.draw( axh );
-            
-            bm = BasicMold( min_point, max_point, cor_point );
-            bm.draw( axh );
+            obj.visualization_generator.draw( axh, angles );
             
             view( 3 );
             light( axh, 'Position', [ 0 0 -1 ] );
@@ -127,6 +89,7 @@ classdef VisualizationWidget < handle
     properties ( Access = private )
         
         button_handle
+        visualization_generator
         
     end
     

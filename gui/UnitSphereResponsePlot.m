@@ -3,25 +3,22 @@ classdef (Sealed) UnitSphereResponsePlot < handle
     methods ( Access = public )
         
         function obj = UnitSphereResponsePlot( ...
-                responses, ...
+                response_data, ...
+                visualization_generator, ...
                 figure_resolution_px ...
                 )
             
-            % create figure
-            [ phi_grid, theta_grid ] = ...
-                responses.get_grid_in_degrees();
             obj.create_figure( ...
                 figure_resolution_px, ...
-                responses.get_name(), ...
-                responses.get_all_display_titles(), ...
-                phi_grid, ...
-                theta_grid ...
-            );
+                response_data.get_name(), ...
+                response_data.get_titles(), ...
+                rad2deg( response_data.get_phi_grid() ), ...
+                rad2deg( response_data.get_theta_grid() ), ...
+                visualization_generator ...
+                );
             
-            % assign inputs
-            obj.responses = responses;
+            obj.data = response_data;
             
-            % prepare visualization for the user
             obj.update_value_range();
             obj.update_surface_plots( obj.UPDATE_COLOR_BAR );
             
@@ -61,7 +58,7 @@ classdef (Sealed) UnitSphereResponsePlot < handle
     
     properties ( Access = private )
         
-        responses
+        data
         picked_point
         
         figure_handle
@@ -97,7 +94,7 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         
         function update_pareto_front( obj )
             
-            points = obj.responses.get_pareto_front_decisions_in_degrees();
+            points = rad2deg( obj.data.get_pareto_front() );
             obj.point_plotter.update_pareto_front( points );
             
         end
@@ -105,9 +102,7 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         
         function update_minimum( obj )
             
-            point = obj.responses.get_minima_decisions_in_degrees( ...
-                obj.get_objective_index() ...
-                );
+            point = rad2deg( obj.data.get_minimum( obj.get_selected_objective() ) );
             obj.point_plotter.update_minimum( point );
             
         end
@@ -115,10 +110,9 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         
         function update_picked_point( obj )
             
-            indices = obj.get_indices_from_point( obj.picked_point );
-            value = obj.responses.get_objective_value( ...
-                indices, ...
-                obj.get_objective_index() ...
+            value = obj.data.get_objective_value( ...
+                deg2rad( obj.picked_point ), ...
+                obj.get_selected_objective() ...
                 );
             obj.picked_point_reporter.update_picked_point( ...
                 obj.picked_point, ...
@@ -154,29 +148,14 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         
         function values = get_value_range( obj )
             
-            values = obj.responses.get_objective_value_range( obj.get_objective_index() );
+            values = obj.data.get_objective_value_range( obj.get_selected_objective() );
             
         end
         
         
-        function indices = get_indices_from_point( obj, point )
-            
-            indices = obj.responses.get_grid_indices_from_decisions( point );
-            
-        end
-        
-        
-        function value = get_objective_index( obj )
+        function value = get_selected_objective( obj )
             
             value = obj.objective_picker.get_selection_index();
-            
-        end
-        
-        
-        function point = snap_to_grid( obj, point )
-            
-            indices = obj.get_indices_from_point( point );
-            point = obj.responses.get_point_in_degrees_from_indices( indices );
             
         end
         
@@ -186,7 +165,8 @@ classdef (Sealed) UnitSphereResponsePlot < handle
                 figure_title, ...
                 objective_names, ...
                 phi_grid, ...
-                theta_grid ...
+                theta_grid, ...
+                visualization_generator ...
                 )
             
             % HACK order matters, determines tab order
@@ -231,7 +211,8 @@ classdef (Sealed) UnitSphereResponsePlot < handle
             obj.thresholder.select( ThresholdingWidgets.NO_THRESHOLD );
             obj.visualizer = wf.add_visualization_widget( ...
                 h, ...
-                @obj.ui_visualize_button_Callback ...
+                @obj.ui_visualize_button_Callback, ...
+                visualization_generator ...
                 );
             
             obj.figure_handle = h;
@@ -304,18 +285,15 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         
         function ui_visualize_button_Callback( obj, ~, ~ )
             
-            obj.visualizer.generate_visualization( ...
-                obj.picked_point, ...
-                obj.responses ...
-                );
+            obj.visualizer.generate_visualization( obj.picked_point );
             
         end
         
         
         function ui_axes_button_down_Callback( obj, ~, ~ )
             
-            point = obj.axes.get_picked_point();
-            obj.picked_point = obj.snap_to_grid( point );
+            point_deg = obj.axes.get_picked_point();
+            obj.picked_point = rad2deg( obj.data.snap_to_grid( deg2rad( point_deg ) ) );
             
             % update
             obj.axes.activate( obj.figure_handle );
@@ -327,8 +305,8 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         
         function values = value_picker_objective_values( obj, ~ )
             
-            values = obj.responses.get_objective_values( ...
-                obj.get_objective_index() ...
+            values = obj.data.get_objective_values( ...
+                obj.get_selected_objective() ...
                 );
             
         end
@@ -336,9 +314,9 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         
         function values = value_picker_quantile_values( obj, quantile )
             
-            values = obj.responses.get_quantile_values( ...
+            values = obj.data.get_quantile_values( ...
                 quantile, ...
-                obj.get_objective_index() ...
+                obj.get_selected_objective() ...
                 );
             values = double( values );
             
@@ -347,9 +325,9 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         
         function values = value_picker_thresholded_values( obj, threshold )
             
-            values = obj.responses.get_thresholded_values( ...
+            values = obj.data.get_thresholded_values( ...
                 threshold, ...
-                obj.get_objective_index() ...
+                obj.get_selected_objective() ...
                 );
             values = double( values );
             
