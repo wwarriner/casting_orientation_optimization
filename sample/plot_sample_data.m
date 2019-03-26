@@ -12,10 +12,6 @@ data = results.(name);
 data.Properties.UserData.Name = name;
 data.Properties.UserData.ObjectiveVariablesPath = ...
     which( data.Properties.UserData.ObjectiveVariablesPath );
-data.Properties.UserData.StlPath = ...
-    which( data.Properties.UserData.StlPath );
-data.Properties.UserData.OptionsPath = ...
-    which( data.Properties.UserData.OptionsPath );
 
 %% construct response data
 figure_resolution_px = 600;
