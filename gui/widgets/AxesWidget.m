@@ -111,6 +111,12 @@ classdef AxesWidget < handle
             
             set( 0, 'currentfigure', figure_handle );
             figure_handle.CurrentAxes = obj.axes_handle;
+            ch = obj.axes_handle.Children;
+            for i = 1 : numel( ch )
+                
+                ch( i ).HitTest = 'off';
+                
+            end
             
         end
         
