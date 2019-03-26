@@ -3,36 +3,22 @@ classdef (Sealed) OrientationBaseCase < handle
     methods ( Access = public )
         
         function obj = OrientationBaseCase( ...
+                component_path, ...
+                feeders_path, ...
                 option_path, ...
-                stl_path, ...
-                objective_variables ...
+                objective_variables_path ...
                 )
             
-            if nargin < 2
-                stl_path = '';
-            end
+            obj.component = Component.load_obj( component_path );
+            obj.feeders = Feeders.load_obj( feeders_path );
             obj.options = Options( ...
                 'option_defaults.json', ...
                 option_path, ...
-                stl_path, ...
+                '', ...
                 '' ...
                 );
-            
-            if ischar( objective_variables ) || isstring( objective_variables )
-                obj.objective_variables = ObjectiveVariables( objective_variables );
-            else
-                obj.objective_variables = objective_variables;
-            end
-            obj.base_case = obj.generate_base_case( obj.options );
-            
-        end
-        
-        
-        function results = determine_results( obj, angles )
-            
-            angles = angles( : ).';
-            objectives = obj.determine_objectives( angles );
-            results = [ angles objectives ];
+            obj.objective_variables = ...
+                ObjectiveVariables( objective_variables_path );
             
         end
         
@@ -40,45 +26,7 @@ classdef (Sealed) OrientationBaseCase < handle
         function results = determine_results_as_table( obj, angles )
             
             results = array2table( obj.determine_results( angles ) );
-            results.Properties.VariableNames = obj.get_titles();
-            
-        end
-        
-        
-        function base_case = get_base_case( obj )
-            
-            base_case = obj.base_case;
-            
-        end
-        
-        
-        function rotated_case = get_rotated_case( obj, angles )
-            
-            rotated_case = obj.generate_rotated_case( angles );
-            
-        end
-        
-        
-        function fv = get_rotated_component_fv( obj, angles )
-            
-            c = obj.base_case.get( Component.NAME );
-            rc = c.rotate( obj.create_rotator( angles ) );
-            fv = rc.fv;
-            
-        end
-        
-        
-        function fvs = get_rotated_feeder_fvs( obj, angles )
-            
-            f = obj.base_case.get( Feeders.NAME );
-            fvs = f.rotate_fvs_only( obj.create_rotator( angles ) );
-            
-        end
-        
-        
-        function center = get_center_of_rotation( obj )
-            
-            center = obj.base_case.get( Component.NAME ).centroid;
+            results.Properties.VariableNames = obj.compose_titles();
             
         end
         
@@ -111,19 +59,9 @@ classdef (Sealed) OrientationBaseCase < handle
         end
         
         
-        function titles = get_titles( obj )
-            
-            titles = [ ...
-                obj.get_decision_variable_titles(); ...
-                obj.get_objective_variable_titles() ...
-                ];
-            
-        end
-        
-        
         function name = get_name( obj )
             
-            name = obj.base_case.get( Component.NAME ).name;
+            name = obj.component.name;
             
         end
         
@@ -167,20 +105,19 @@ classdef (Sealed) OrientationBaseCase < handle
     
     properties ( Access = private )
         
+        component
+        feeders
         options
         objective_variables
-        decision_variables
-        
-        base_case
         
     end
     
     
     methods ( Access = private )
         
-        function titles = get_objective_variable_titles( obj )
+        function rotated_case = get_rotated_case( obj, angles )
             
-            titles = obj.objective_variables.get_titles();
+            rotated_case = obj.generate_rotated_case( angles );
             
         end
         
@@ -189,43 +126,44 @@ classdef (Sealed) OrientationBaseCase < handle
             
             r = obj.create_rotator( angles );
             rotated_case = Results();
-            rotated_case.add( Component.NAME, obj.base_case.get( Component.NAME ).rotate( r ) );
+            rotated_case.add( Component.NAME, obj.component.rotate( r ) );
             mr = Mesh( rotated_case, obj.options );
             mr.run();
             rotated_case.add( Mesh.NAME, mr );
-            rotated_case.add( Feeders.NAME, obj.base_case.get( Feeders.NAME ).rotate( r, mr ) );
+            rotated_case.add( Feeders.NAME, obj.feeders.rotate( r, mr ) );
             
         end
         
         
         function rotator = create_rotator( obj, angles )
             
-            rotator = Rotator( angles, obj.get_center_of_rotation() );
+            rotator = Rotator( angles, obj.component.centroid() );
             
         end
         
-    end
-    
-    
-    methods ( Access = private, Static )
         
-        function base_case = generate_base_case( options )
+        function results = determine_results( obj, angles )
             
-            base_case = Results();
-            objects = { ...
-                Component( base_case, options ), ...
-                Mesh( base_case, options ), ...
-                EdtProfile( base_case, options ), ...
-                Segmentation( base_case, options ), ...
-                Feeders( base_case, options ) ...
-                };
-            for i = 1 : numel( objects )
-                
-                current = objects{ i };
-                current.run();
-                base_case.add( current.NAME, current );
-                
-            end
+            angles = angles( : ).';
+            objectives = obj.determine_objectives( angles );
+            results = [ angles objectives ];
+            
+        end
+        
+        
+        function titles = compose_titles( obj )
+            
+            titles = [ ...
+                obj.get_decision_variable_titles(); ...
+                obj.get_objective_variable_titles() ...
+                ];
+            
+        end
+        
+        
+        function titles = get_objective_variable_titles( obj )
+            
+            titles = obj.objective_variables.get_titles();
             
         end
         
