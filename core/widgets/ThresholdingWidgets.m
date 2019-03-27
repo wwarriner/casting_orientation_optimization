@@ -5,7 +5,8 @@ classdef ThresholdingWidgets < handle
         NO_THRESHOLD = 1;
         VALUE_THRESHOLD = 2;
         QUANTILE_THRESHOLD = 3;
-        COUNT = 3;
+        NO_GO_THRESHOLD = 4;
+        COUNT = 4;
         
     end
     
@@ -177,7 +178,8 @@ classdef ThresholdingWidgets < handle
             ids = { ...
                 ThresholdingWidgets.NO_THRESHOLD, ...
                 ThresholdingWidgets.VALUE_THRESHOLD, ...
-                ThresholdingWidgets.QUANTILE_THRESHOLD ...
+                ThresholdingWidgets.QUANTILE_THRESHOLD, ...
+                ThresholdingWidgets.NO_GO_THRESHOLD ...
                 };
             assert( numel( ids ) == ThresholdingWidgets.COUNT );
             
