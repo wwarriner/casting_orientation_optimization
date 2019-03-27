@@ -7,8 +7,8 @@ classdef DataExtractor < handle
             name = metadata.Name;
             
             ov = ObjectiveVariables( metadata.ObjectiveVariablesPath );
-            titles = ov.get_display_titles();
-            tags = ov.get_titles();
+            titles = ov.get_titles();
+            tags = ov.get_tags();
             interp_methods = ov.get_interpolation_methods();
             
             start = metadata.ObjectiveStartColumn;
