@@ -106,6 +106,29 @@ classdef ResponseData < handle
         end
         
         
+        function values = get_no_go_values( obj )
+            
+            tags = { ...
+                'uc_count' ...
+                'pp_projected_area_reciprocal' ...
+                'pp_flatness' ...
+                'pp_draw' ...
+                'wf_worst_drop_max' ...
+                'flask_height' ...
+                };
+            indices = [ 1 2 3 4 11 12 ];
+            quantile = 0.3;
+            values = true( size( obj.phi_grid ) );
+            for i = 1 : numel( indices )
+                
+                values = values & ...
+                    ~obj.get_quantile_values( quantile, indices( i ) );
+                
+            end
+            
+        end
+        
+        
         function point = snap_to_grid( obj, point )
             
             indices = obj.snap_to_grid_indices( point );
