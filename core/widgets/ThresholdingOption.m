@@ -32,6 +32,7 @@ classdef ThresholdingOption < handle
                 font_size, ...
                 label ...
                 );
+            
             if nargin > 6
                 obj.edit_text_handle = obj.prepare_edit_text( ...
                     button_group_handle, ...
@@ -49,7 +50,13 @@ classdef ThresholdingOption < handle
                     default_threshold_value, ...
                     @(h,e)slider_callback(h,e,obj) ...
                     );
-                obj.update_threshold_value( default_threshold_value );
+                obj.threshold_value = ConstrainedNumericValue( ...
+                    default_min, ...
+                    default_max, ...
+                    default_threshold_value ...
+                    );
+            else
+                obj.threshold_value = ConstrainedNumericValue( 0, 1, 0.5 );
             end
             
         end
@@ -59,7 +66,6 @@ classdef ThresholdingOption < handle
             
             obj.radio_button_handle.BackgroundColor = color;
             obj.edit_text_handle.BackgroundColor = color;
-            %obj.slider_handle.BackgroundColor = color;
             
         end
         
@@ -80,15 +86,10 @@ classdef ThresholdingOption < handle
         
         function set_range( obj, range )
             
-            old_value = obj.threshold_value;
-            old_min = obj.slider_handle.Min;
-            old_max = obj.slider_handle.Max;
-            ratio = ( old_value - old_min ) / ( old_max - old_min );
-            
+            obj.threshold_value.set_range( range.min, range.max );
             obj.slider_handle.Min = range.min;
             obj.slider_handle.Max = range.max;
-            new_value = ratio * ( range.max - range.min ) + range.min;
-            obj.update_threshold_value( new_value );
+            obj.update_threshold_value( obj.get_threshold_value() );
             
         end
         
@@ -103,7 +104,7 @@ classdef ThresholdingOption < handle
         
         function value = get_threshold_value( obj )
             
-            value = obj.threshold_value;
+            value = obj.threshold_value.get_value();
             
         end
         
@@ -182,54 +183,9 @@ classdef ThresholdingOption < handle
         
         function changed = update_threshold_value( obj, new_value )
             
-            constrained_value = obj.constrain_threshold_value( new_value );
-            changed = obj.has_threshold_value_changed( constrained_value );
-            obj.update_handle_threshold_values( constrained_value );
-            
-        end
-        
-        
-        function constrained_value = constrain_threshold_value( obj, new_value )
-            
-            if isnan( new_value )
-                constrained_value = obj.threshold_value;
-            elseif new_value < obj.get_min_threshold_value()
-                constrained_value = obj.get_min_threshold_value();
-            elseif obj.get_max_threshold_value() < new_value
-                constrained_value = obj.get_max_threshold_value();
-            else
-                constrained_value = new_value;
-            end
-            
-        end
-        
-        
-        function value = get_min_threshold_value( obj )
-            
-            value = obj.slider_handle.Min;
-            
-        end
-        
-        
-        function value = get_max_threshold_value( obj )
-            
-            value = obj.slider_handle.Max;
-            
-        end
-        
-        
-        function changed = has_threshold_value_changed( obj, constrained_value )
-            
-            changed = obj.threshold_value ~= constrained_value;
-            
-        end
-        
-        
-        function update_handle_threshold_values( obj, constrained_value )
-            
-            obj.edit_text_handle.String = num2str( constrained_value );
-            obj.slider_handle.Value = constrained_value;
-            obj.threshold_value = constrained_value;
+            changed = obj.threshold_value.update( new_value );
+            obj.slider_handle.Value = obj.get_threshold_value();
+            obj.edit_text_handle.String = num2str( obj.get_threshold_value() );
             
         end
         
