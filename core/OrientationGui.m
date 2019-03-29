@@ -309,6 +309,7 @@ classdef (Sealed) OrientationGui < handle
         
         function ui_axes_button_down_Callback( obj, ~, ~ )
             
+            % pick point
             point_deg = obj.axes.get_picked_point();
             obj.picked_point = rad2deg( obj.data.snap_to_grid( deg2rad( point_deg ) ) );
             
