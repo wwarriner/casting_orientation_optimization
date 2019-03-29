@@ -194,6 +194,7 @@ classdef (Sealed) WidgetFactory < handle
     
     properties ( Access = private, Constant )
         
+        % TODO factor these out somewhere
         MIN_RESOLUTION = 300;
         VERTICAL_PAD = 6;
         HORIZONTAL_PAD = 6;
