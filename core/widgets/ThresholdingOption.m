@@ -15,12 +15,7 @@ classdef ThresholdingOption < handle
                 value_picker_fn, ...
                 y_pos, ...
                 font_size, ...
-                label, ...
-                default_min, ...
-                default_max, ...
-                default_threshold_value, ...
-                edit_text_callback, ...
-                slider_callback ...
+                label ...
                 )
             
             obj.button_group_handle = button_group_handle;
@@ -33,39 +28,12 @@ classdef ThresholdingOption < handle
                 label ...
                 );
             
-            if nargin > 6
-                obj.edit_text_handle = obj.prepare_edit_text( ...
-                    button_group_handle, ...
-                    y_pos, ...
-                    font_size, ...
-                    default_threshold_value, ...
-                    @(h,e)edit_text_callback(h,e,obj) ...
-                    );
-                obj.slider_handle = obj.prepare_slider( ...
-                    button_group_handle, ...
-                    y_pos, ...
-                    font_size, ...
-                    default_min, ...
-                    default_max, ...
-                    default_threshold_value, ...
-                    @(h,e)slider_callback(h,e,obj) ...
-                    );
-                obj.threshold_value = ConstrainedNumericValue( ...
-                    default_min, ...
-                    default_max, ...
-                    default_threshold_value ...
-                    );
-            else
-                obj.threshold_value = ConstrainedNumericValue( 0, 1, 0.5 );
-            end
-            
         end
         
         
         function set_background_color( obj, color )
             
             obj.radio_button_handle.BackgroundColor = color;
-            obj.edit_text_handle.BackgroundColor = color;
             
         end
         
@@ -84,16 +52,6 @@ classdef ThresholdingOption < handle
         end
         
         
-        function set_range( obj, range )
-            
-            obj.threshold_value.set_range( range.min, range.max );
-            obj.slider_handle.Min = range.min;
-            obj.slider_handle.Max = range.max;
-            obj.update_threshold_value( obj.get_threshold_value() );
-            
-        end
-        
-        
         function values = pick_values( obj )
             
             threshold = obj.get_threshold_value();
@@ -102,25 +60,10 @@ classdef ThresholdingOption < handle
         end
         
         
-        function value = get_threshold_value( obj )
+        % override me
+        function value = get_threshold_value( ~ )
             
-            value = obj.threshold_value.get_value();
-            
-        end
-        
-        
-        function changed = update_threshold_value_from_edit_text( obj )
-            
-            new_value = obj.get_edit_text_threshold_value();
-            changed = obj.update_threshold_value( new_value );
-            
-        end
-        
-        
-        function changed = update_threshold_value_from_slider( obj )
-            
-            new_value = obj.get_slider_threshold_value();
-            changed = obj.update_threshold_value( new_value );
+            value = 0.5;
             
         end
         
@@ -140,21 +83,7 @@ classdef ThresholdingOption < handle
     end
     
     
-    properties ( Access = private )
-        
-        button_group_handle
-        value_picker_fn
-        
-        radio_button_handle
-        edit_text_handle
-        slider_handle
-        
-        threshold_value
-        
-    end
-    
-    
-    properties ( Access = private, Constant )
+    properties ( Access = protected, Constant )
         
         RADIO_BUTTON_X_POS = 0;
         
@@ -165,29 +94,32 @@ classdef ThresholdingOption < handle
     end
     
     
-    methods ( Access = private )
+    methods ( Access = protected, Static )
         
-        function value = get_edit_text_threshold_value( obj )
+        function x = get_edit_text_x_pos()
             
-            value = str2double( obj.edit_text_handle.String );
+            x = ThresholdingOption.RADIO_BUTTON_X_POS + ...
+                ThresholdingOption.RADIO_BUTTON_WIDTH;
             
         end
         
         
-        function value = get_slider_threshold_value( obj )
+        function x = get_slider_x_pos()
             
-            value = obj.slider_handle.Value;
+            x = ThresholdingOption.get_edit_text_x_pos() + ...
+                ThresholdingOption.EDIT_TEXT_WIDTH;
             
         end
         
+    end
+    
+    
+    properties ( Access = private )
         
-        function changed = update_threshold_value( obj, new_value )
-            
-            changed = obj.threshold_value.update( new_value );
-            obj.slider_handle.Value = obj.get_threshold_value();
-            obj.edit_text_handle.String = num2str( obj.get_threshold_value() );
-            
-        end
+        button_group_handle
+        value_picker_fn
+        
+        radio_button_handle
         
     end
     
@@ -214,79 +146,6 @@ classdef ThresholdingOption < handle
                 get_height( font_size ) ...
                 ];
             h.Parent = button_group_handle;
-            
-        end
-        
-        
-        function h = prepare_edit_text( ...
-                obj, ...
-                button_group_handle, ...
-                y_pos, ...
-                font_size, ...
-                default_threshold_value, ...
-                edit_text_callback ...
-                )
-            
-            h = uicontrol();
-            h.Style = 'edit';
-            h.String = num2str( default_threshold_value );
-            h.FontSize = font_size;
-            h.Position = [ ...
-                obj.get_edit_text_x_pos() ...
-                y_pos ...
-                obj.EDIT_TEXT_WIDTH ...
-                get_height( font_size ) ...
-                ];
-            h.Parent = button_group_handle;
-            h.Callback = edit_text_callback;
-            
-        end
-        
-        
-        function h = prepare_slider( ...
-                obj, ...
-                button_group_handle, ...
-                y_pos, ...
-                font_size, ...
-                default_min, ...
-                default_max, ...
-                default_threshold_value, ...
-                slider_callback ...
-                )
-            
-            h = uicontrol();
-            h.Style = 'slider';
-            h.Min = default_min;
-            h.Max = default_max;
-            h.Value = default_threshold_value;
-            h.Position = [ ...
-                obj.get_slider_x_pos() ...
-                y_pos ...
-                obj.SLIDER_WIDTH ...
-                get_height( font_size ) ...
-                ];
-            h.Parent = button_group_handle;
-            h.Callback = slider_callback;
-            
-        end
-        
-    end
-    
-    
-    methods ( Access = private, Static )
-        
-        function x = get_edit_text_x_pos()
-            
-            x = ThresholdingOption.RADIO_BUTTON_X_POS + ...
-                ThresholdingOption.RADIO_BUTTON_WIDTH;
-            
-        end
-        
-        
-        function x = get_slider_x_pos()
-            
-            x = ThresholdingOption.get_edit_text_x_pos() + ...
-                ThresholdingOption.EDIT_TEXT_WIDTH;
             
         end
         

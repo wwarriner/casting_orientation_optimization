@@ -27,6 +27,20 @@ classdef ConstrainedNumericValue < handle
         end
         
         
+        function min = get_min( obj )
+            
+            min = obj.min;
+            
+        end
+        
+        
+        function max = get_max( obj )
+            
+            max = obj.max;
+            
+        end
+        
+        
         function set_range( obj, new_min, new_max )
             
             assert( new_min < new_max );

@@ -24,6 +24,13 @@ classdef ResponseData < handle
         end
         
         
+        function count = get_count( obj )
+            
+            count = obj.titles.Count();
+            
+        end
+        
+        
         function titles = get_titles( obj )
             
             titles = obj.titles;
@@ -51,6 +58,23 @@ classdef ResponseData < handle
             [ PHI_INDEX, THETA_INDEX ] = unit_sphere_plot_indices();
             v = obj.get_objective_values( objective );
             value = v( indices( THETA_INDEX ), indices( PHI_INDEX ) );
+            
+        end
+        
+        
+        function values = get_objective_value_ranges( obj )
+            
+            values = containers.Map( ...
+                'keytype', 'char', ...
+                'valuetype', 'any' ...
+                );
+            tags = obj.titles.keys();
+            for i = 1 : obj.get_count()
+                
+                tag = tags{ i };
+                values( tag ) = obj.get_objective_value_range( tag );
+                
+            end
             
         end
         
@@ -89,7 +113,8 @@ classdef ResponseData < handle
             assert( 0 <= quantile );
             assert( quantile <= 1 );
             
-            threshold = obj.quantiles{ objective }( quantile );
+            interpolant = obj.quantiles( objective );
+            threshold = interpolant( quantile );
             values = obj.get_thresholded_values( threshold, objective );
             
         end
@@ -103,25 +128,27 @@ classdef ResponseData < handle
         end
         
         
-        function values = get_no_go_values( obj )
+        function values = get_no_go_values( ...
+                obj, ...
+                thresholds, ...
+                usage_states ...
+                )
             
-            tags = { ...
-                'uc_count' ...
-                'pp_projected_area_reciprocal' ...
-                'pp_flatness' ...
-                'pp_draw' ...
-                'wf_worst_drop_max' ...
-                'flask_height' ...
-                };
-            indices = [ 1 2 3 4 11 12 ];
-            quantile = 0.3;
+            count = thresholds.Count();
+            tags = thresholds.keys();
             values = true( size( obj.phi_grid ) );
-            for i = 1 : numel( indices )
+            for i = 1 : count
                 
-                values = values & ...
-                    ~obj.get_quantile_values( quantile, indices( i ) );
+                tag = tags{ i };
+                if ~usage_states( tag )
+                    continue;
+                end
+                
+                threshold = thresholds( tag );
+                values = values & ~next;
                 
             end
+            values = ~values;
             
         end
         

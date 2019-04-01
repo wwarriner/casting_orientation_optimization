@@ -16,6 +16,10 @@ classdef (Sealed) OrientationGui < handle
                 rad2deg( response_data.get_theta_grid() ), ...
                 visualization_generator ...
                 );
+            obj.create_threshold_selector( ...
+                response_data.get_titles(), ...
+                response_data.get_objective_value_ranges() ...
+                );
             
             obj.data = response_data;
             
@@ -32,7 +36,7 @@ classdef (Sealed) OrientationGui < handle
         
         function set_color_map( obj, color_map )
             
-            obj.axes.set_color_map( color_map );
+            obj.axes.set_color_map( flipud( color_map ) );
             
         end
         
@@ -50,6 +54,9 @@ classdef (Sealed) OrientationGui < handle
             obj.picked_point_reporter.set_background_color( bg_color );
             obj.thresholder.set_background_color( bg_color );
             obj.point_plotter.set_background_color( bg_color );
+            obj.threshold_selector.set_background_color( bg_color );
+            
+            obj.background_color = bg_color;
             
         end
         
@@ -61,7 +68,10 @@ classdef (Sealed) OrientationGui < handle
         data
         picked_point
         
+        background_color
+        
         figure_handle
+        threshold_selector
         
         picked_point_reporter
         objective_picker
@@ -202,6 +212,12 @@ classdef (Sealed) OrientationGui < handle
             
             DEFAULT_THRESHOLD_SELECTION_ID = ThresholdingWidgets.NO_THRESHOLD;
             ids = ThresholdingWidgets.get_ids();
+            types = containers.Map( ids, { ...
+                SimpleOption.get_type(), ...
+                ValueOption.get_type(), ...
+                QuantileOption.get_type(), ...
+                ButtonOption.get_type() ...
+                } );
             picker_fns = containers.Map( ids, { ...
                 @obj.value_picker_objective_values, ...
                 @obj.value_picker_thresholded_values, ...
@@ -214,14 +230,17 @@ classdef (Sealed) OrientationGui < handle
                 'Quantile Threshold', ...
                 'Go/No-Go' ...
                 } );
+            no_go_button_label = 'Select thresholds...';
             obj.thresholder = wf.add_thresholding_widget( ...
                 h, ...
                 DEFAULT_THRESHOLD_SELECTION_ID, ...
+                types, ...
                 picker_fns, ...
                 labels, ...
                 @obj.ui_threshold_selection_changed_Callback, ...
-                @obj.ui_threshold_edit_text_Callback, ...
-                @obj.ui_threshold_slider_Callback ...
+                @obj.ui_threshold_value_option_Callback, ...
+                no_go_button_label, ...
+                @obj.ui_no_go_button_Callback ...
                 );
             
             obj.thresholder.select( ThresholdingWidgets.NO_THRESHOLD );
@@ -233,6 +252,21 @@ classdef (Sealed) OrientationGui < handle
                 );
             
             obj.figure_handle = h;
+            
+        end
+        
+        
+        function create_threshold_selector( ...
+                obj, ...
+                titles, ...
+                value_ranges ...
+                )
+            
+            obj.threshold_selector = ThresholdSelector( ...
+                @obj.ui_threshold_selector_update_Callback, ...
+                titles, ...
+                value_ranges ...
+                );
             
         end
         
@@ -265,10 +299,10 @@ classdef (Sealed) OrientationGui < handle
         end
         
         
-        function ui_threshold_edit_text_Callback( obj, ~, ~, widget )
+        function ui_threshold_value_option_Callback( obj, h, ~, widget )
             
             obj.axes.activate( obj.figure_handle );
-            if widget.update_threshold_value_from_edit_text()
+            if widget.update_threshold_value( h.Style )
                 widget.select();
                 obj.update_surface_plots();
             end
@@ -278,15 +312,16 @@ classdef (Sealed) OrientationGui < handle
         end
         
         
-        function ui_threshold_slider_Callback( obj, ~, ~, widget )
+        function ui_no_go_button_Callback( obj, ~, ~, widget )
             
             obj.axes.activate( obj.figure_handle );
-            if widget.update_threshold_value_from_slider()
-                widget.select();
-                obj.update_surface_plots();
-            end
+            widget.select();
+            obj.update_surface_plots();
             obj.update_points();
             drawnow();
+            
+            obj.threshold_selector.draw();
+            obj.threshold_selector.set_background_color( obj.background_color );
             
         end
         
@@ -315,6 +350,16 @@ classdef (Sealed) OrientationGui < handle
             
             % update
             obj.axes.activate( obj.figure_handle );
+            obj.update_points();
+            drawnow();
+            
+        end
+        
+        
+        function ui_threshold_selector_update_Callback( obj, ~, ~ )
+            
+            obj.axes.activate( obj.figure_handle );
+            obj.update_surface_plots();
             obj.update_points();
             drawnow();
             
@@ -354,7 +399,10 @@ classdef (Sealed) OrientationGui < handle
         
         function values = value_picker_no_go_values( obj, ~ )
             
-            values = obj.data.get_no_go_values();
+            values = obj.data.get_no_go_values( ...
+                obj.threshold_selector.get_thresholds(), ...
+                obj.threshold_selector.get_usage_states() ...
+                );
             values = double( values );
             
         end
