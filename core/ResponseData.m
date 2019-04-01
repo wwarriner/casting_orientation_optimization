@@ -49,11 +49,8 @@ classdef ResponseData < handle
             
             indices = obj.snap_to_grid_indices( point );
             [ PHI_INDEX, THETA_INDEX ] = unit_sphere_plot_indices();
-            value = obj.values( ...
-                indices( THETA_INDEX ), ...
-                indices( PHI_INDEX ), ...
-                objective ...
-                );
+            v = obj.get_objective_values( objective );
+            value = v( indices( THETA_INDEX ), indices( PHI_INDEX ) );
             
         end
         
@@ -68,14 +65,14 @@ classdef ResponseData < handle
         
         function values = get_objective_values( obj, objective )
             
-            values = obj.values( :, :, objective );
+            values = obj.values( objective );
             
         end
         
         
         function point = get_minimum( obj, objective )
             
-            point = obj.minima( objective, : );
+            point = obj.minima( objective );
             
         end
         

@@ -24,7 +24,7 @@ classdef DataExtractor < handle
             obj.tags = tags;
             obj.interp_methods = interp_methods;
             obj.data = data_table;
-        
+            
             [ obj.phi_resolution, obj.theta_resolution ] = ...
                 unit_sphere_grid_resolution( resolution );
             
@@ -63,7 +63,16 @@ classdef DataExtractor < handle
         
         function titles = get_titles( obj )
             
-            titles = obj.titles;
+            titles = containers.Map( ...
+                'keytype', 'char', ...
+                'valuetype', 'any' ...
+                );
+            for i = 1 : obj.objective_count
+                
+                tag = obj.get_tag( i );
+                titles( tag ) = obj.titles{ i };
+                
+            end
             
         end
         
@@ -84,41 +93,51 @@ classdef DataExtractor < handle
         
         function values = get_objective_values( obj )
             
-            values = nan( ...
-                obj.theta_resolution, ...
-                obj.phi_resolution, ...
-                obj.objective_count ...
-                );            
+            values = containers.Map( ...
+                'keytype', 'char', ...
+                'valuetype', 'any' ...
+                );
             for i = 1 : obj.objective_count
                 
+                tag = obj.get_tag( i );
                 interpolator = generate_unit_sphere_scattered_interpolant( ...
                     obj.data{ :, obj.decision_indices }, ...
-                    obj.data{ :, obj.get_tag( i ) }, ...
+                    obj.data{ :, tag }, ...
                     obj.interp_methods{ i } ...
                     );
-                values( :, :, i ) = interpolator( obj.phi_grid, obj.theta_grid );
+                values( tag ) = interpolator( obj.phi_grid, obj.theta_grid );
                 
             end
-            assert( ~any( isnan( values( : ) ) ) );
             
         end
         
         
         function points = get_minima_points( obj )
             
-            points = nan( obj.objective_count, 2 );
+            points_uncorrected = nan( obj.objective_count, 2 );
             for i = 1 : obj.objective_count
                 
                 values = obj.data{ :, obj.objective_indices( i ) };
                 [ ~, index ] = min( values( : ) );
-                points( i, : ) = obj.data{ index, obj.decision_indices };
+                points_uncorrected( i, : ) = obj.data{ index, obj.decision_indices };
                 
             end
-            assert( ~any( isnan( points( : ) ) ) );
+            assert( ~any( isnan( points_uncorrected( : ) ) ) );
             
+            points_corrected = points_uncorrected;
             TOL = 1e-3;
-            points( :, 1 ) = min( pi - TOL, max( -pi + TOL, points( :, 1 ) ) );
-            points( :, 2 ) = min( pi / 2 - TOL, max( -pi / 2 + TOL, points( :, 2 ) ) );
+            points_corrected( :, 1 ) = min( pi - TOL, max( -pi + TOL, points_uncorrected( :, 1 ) ) );
+            points_corrected( :, 2 ) = min( pi / 2 - TOL, max( -pi / 2 + TOL, points_uncorrected( :, 2 ) ) );
+            
+            points = containers.Map( ...
+                'keytype', 'char', ...
+                'valuetype', 'any' ...
+                );
+            for i = 1 : obj.objective_count
+                
+                points( obj.get_tag( i ) ) = points_corrected( i, : );
+                
+            end
             
         end
         
@@ -135,12 +154,16 @@ classdef DataExtractor < handle
         
         function interpolators = get_quantile_interpolants( obj, objective_values )
             
-            interpolators = cell( obj.objective_count );
+            interpolators = containers.Map( ...
+                'keytype', 'char', ...
+                'valuetype', 'any' ...
+                );
             for i = 1 : obj.objective_count
                 
-                interpolators{ i } = generate_unit_sphere_quantile_interpolant( ...
+                tag = obj.get_tag( i );
+                interpolators( tag ) = generate_unit_sphere_quantile_interpolant( ...
                     obj.theta_grid, ...
-                    objective_values( :, :, i ), ...
+                    objective_values( tag ), ...
                     'linear' ...
                     );
                 
