@@ -20,6 +20,10 @@ classdef (Sealed) OrientationGui < handle
                 response_data.get_titles(), ...
                 response_data.get_objective_value_ranges() ...
                 );
+            obj.create_parallel_plot( ...
+                response_data.get_titles(), ...
+                response_data.get_pareto_front_table() ...
+                );
             
             obj.data = response_data;
             
@@ -72,6 +76,7 @@ classdef (Sealed) OrientationGui < handle
         
         figure_handle
         threshold_selector
+        parallel_plotter
         
         picked_point_reporter
         objective_picker
@@ -104,6 +109,7 @@ classdef (Sealed) OrientationGui < handle
         
         function update_pareto_front( obj )
             
+            % color pareto front points differently based on parallel plot etc
             points = rad2deg( obj.data.get_pareto_front() );
             obj.point_plotter.update_pareto_front( points );
             
@@ -270,6 +276,20 @@ classdef (Sealed) OrientationGui < handle
             
         end
         
+        
+        function create_parallel_plot( ...
+                obj, ...
+                titles, ...
+                pareto_front_table ...
+                )
+            
+            obj.parallel_plotter = ParallelPlotWidget( ...
+                titles, ...
+                pareto_front_table ...
+                );
+            
+        end
+        
     end
     
     
@@ -323,6 +343,14 @@ classdef (Sealed) OrientationGui < handle
             obj.threshold_selector.draw();
             obj.threshold_selector.set_background_color( obj.background_color );
             
+            obj.parallel_plotter.draw();
+            obj.parallel_plotter.set_background_color( obj.background_color );
+            
+            obj.parallel_plotter.update_thresholds( ...
+                obj.threshold_selector.get_thresholds(), ...
+                obj.threshold_selector.get_usage_states() ...
+                );
+            
         end
         
         
@@ -361,6 +389,10 @@ classdef (Sealed) OrientationGui < handle
             obj.axes_widget.activate( obj.figure_handle );
             obj.update_surface_plots();
             obj.update_points();
+            obj.parallel_plotter.update_thresholds( ...
+                obj.threshold_selector.get_thresholds(), ...
+                obj.threshold_selector.get_usage_states() ...
+                );
             drawnow();
             
         end
@@ -401,7 +433,8 @@ classdef (Sealed) OrientationGui < handle
             
             values = obj.data.get_no_go_values( ...
                 obj.threshold_selector.get_thresholds(), ...
-                obj.threshold_selector.get_usage_states() ...
+                obj.threshold_selector.get_usage_states(), ...
+                obj.threshold_selector.is_using_quantiles() ...
                 );
             values = double( values );
             

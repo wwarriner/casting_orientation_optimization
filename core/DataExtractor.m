@@ -152,6 +152,22 @@ classdef DataExtractor < handle
         end
         
         
+        function values = get_pareto_front_values( obj )
+            
+            values = containers.Map( ...
+                'keytype', 'char', ...
+                'valuetype', 'any' ...
+                );
+            for i = 1 : obj.objective_count
+                
+                tag = obj.get_tag( i );
+                values( tag ) = obj.data{ obj.data.is_pareto_dominant, tag };
+                
+            end
+            
+        end
+        
+        
         function interpolators = get_quantile_interpolants( obj, objective_values )
             
             interpolators = containers.Map( ...

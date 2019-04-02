@@ -10,6 +10,7 @@ classdef ResponseData < handle
             obj.values = data_extractor.get_objective_values();
             obj.minima = data_extractor.get_minima_points();
             obj.pareto_front = data_extractor.get_pareto_front_points();
+            obj.pareto_front_values = data_extractor.get_pareto_front_values();
             obj.quantiles = data_extractor.get_quantile_interpolants( obj.values );
             obj.phi_grid = data_extractor.get_phi_grid();
             obj.theta_grid = data_extractor.get_theta_grid();
@@ -62,6 +63,38 @@ classdef ResponseData < handle
         end
         
         
+        function values = get_objective_values( obj, objective )
+            
+            values = obj.values( objective );
+            
+        end
+        
+        
+        function tbl = get_pareto_front_table( obj )
+            
+            tags = obj.titles.keys();
+            v = nan( size( obj.pareto_front, 1 ), obj.get_count );
+            for i = 1 : obj.titles.Count()
+            
+                tag = tags{ i };
+                v( :, i ) = obj.pareto_front_values( tag );
+                
+            end
+            
+            tbl = array2table( v );
+            tbl.Properties.VariableNames = tags;
+            
+        end
+        
+        
+        function values = get_objective_value_range( obj, objective )
+            
+            values.min = min( obj.get_objective_values( objective ), [], 'all' );
+            values.max = max( obj.get_objective_values( objective ), [], 'all' );
+            
+        end
+        
+        
         function values = get_objective_value_ranges( obj )
             
             values = containers.Map( ...
@@ -75,21 +108,6 @@ classdef ResponseData < handle
                 values( tag ) = obj.get_objective_value_range( tag );
                 
             end
-            
-        end
-        
-        
-        function values = get_objective_value_range( obj, objective )
-            
-            values.min = min( obj.get_objective_values( objective ), [], 'all' );
-            values.max = max( obj.get_objective_values( objective ), [], 'all' );
-            
-        end
-        
-        
-        function values = get_objective_values( obj, objective )
-            
-            values = obj.values( objective );
             
         end
         
@@ -180,6 +198,7 @@ classdef ResponseData < handle
         values
         minima
         pareto_front
+        pareto_front_values
         quantiles
         phi_grid
         theta_grid
