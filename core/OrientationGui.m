@@ -36,14 +36,14 @@ classdef (Sealed) OrientationGui < handle
         
         function set_color_map( obj, color_map )
             
-            obj.axes.set_color_map( flipud( color_map ) );
+            obj.axes_widget.set_color_map( flipud( color_map ) );
             
         end
         
         
         function set_grid_color( obj, grid_color )
             
-            obj.axes.set_grid_color( grid_color );
+            obj.axes_widget.set_grid_color( grid_color );
             
         end
         
@@ -75,7 +75,7 @@ classdef (Sealed) OrientationGui < handle
         
         picked_point_reporter
         objective_picker
-        axes
+        axes_widget
         surface_plotter
         thresholder
         point_plotter
@@ -150,7 +150,7 @@ classdef (Sealed) OrientationGui < handle
             scaled_values = rescale( values, value_range.min, value_range.max );
             obj.surface_plotter.update_surface_plot( scaled_values );
             if do_update_color_bar
-                obj.axes.update_color_bar( value_range );
+                obj.axes_widget.update_color_bar( value_range );
             end
             
         end
@@ -195,7 +195,7 @@ classdef (Sealed) OrientationGui < handle
                 @obj.ui_objective_selection_list_box_Callback ...
                 );
             
-            obj.axes = wf.add_axes_widget( ...
+            obj.axes_widget = wf.add_axes_widget( ...
                 h, ...
                 @obj.ui_axes_button_down_Callback ...
                 );
@@ -278,7 +278,7 @@ classdef (Sealed) OrientationGui < handle
         
         function ui_objective_selection_list_box_Callback( obj, ~, ~, widget )
             
-            obj.axes.activate( obj.figure_handle );
+            obj.axes_widget.activate( obj.figure_handle );
             if widget.update_selection()
                 obj.update_value_range();
                 obj.update_surface_plots( obj.UPDATE_COLOR_BAR );
@@ -291,7 +291,7 @@ classdef (Sealed) OrientationGui < handle
         
         function ui_threshold_selection_changed_Callback( obj, ~, ~ )
             
-            obj.axes.activate( obj.figure_handle );
+            obj.axes_widget.activate( obj.figure_handle );
             obj.update_surface_plots();
             obj.update_points();
             drawnow();
@@ -301,7 +301,7 @@ classdef (Sealed) OrientationGui < handle
         
         function ui_threshold_value_option_Callback( obj, h, ~, widget )
             
-            obj.axes.activate( obj.figure_handle );
+            obj.axes_widget.activate( obj.figure_handle );
             if widget.update_threshold_value( h.Style )
                 widget.select();
                 obj.update_surface_plots();
@@ -314,7 +314,7 @@ classdef (Sealed) OrientationGui < handle
         
         function ui_no_go_button_Callback( obj, ~, ~, widget )
             
-            obj.axes.activate( obj.figure_handle );
+            obj.axes_widget.activate( obj.figure_handle );
             widget.select();
             obj.update_surface_plots();
             obj.update_points();
@@ -328,7 +328,7 @@ classdef (Sealed) OrientationGui < handle
         
         function ui_point_check_box_Callback( obj, ~, ~ )
             
-            obj.axes.activate( obj.figure_handle );
+            obj.axes_widget.activate( obj.figure_handle );
             obj.update_points();
             drawnow();
             
@@ -345,11 +345,11 @@ classdef (Sealed) OrientationGui < handle
         function ui_axes_button_down_Callback( obj, ~, ~ )
             
             % pick point
-            point_deg = obj.axes.get_picked_point();
+            point_deg = obj.axes_widget.get_picked_point();
             obj.picked_point = rad2deg( obj.data.snap_to_grid( deg2rad( point_deg ) ) );
             
             % update
-            obj.axes.activate( obj.figure_handle );
+            obj.axes_widget.activate( obj.figure_handle );
             obj.update_points();
             drawnow();
             
@@ -358,7 +358,7 @@ classdef (Sealed) OrientationGui < handle
         
         function ui_threshold_selector_update_Callback( obj, ~, ~ )
             
-            obj.axes.activate( obj.figure_handle );
+            obj.axes_widget.activate( obj.figure_handle );
             obj.update_surface_plots();
             obj.update_points();
             drawnow();
