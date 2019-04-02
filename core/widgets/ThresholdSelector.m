@@ -13,22 +13,32 @@ classdef ThresholdSelector < handle
             
             values = containers.Map( ...
                 'keytype', 'char', ...
-                'valuetype', 'double' ...
+                'valuetype', 'any' ...
+                );
+            quantiles = containers.Map( ...
+                'keytype', 'char', ...
+                'valuetype', 'any' ...
                 );
             for i = 1 : count
                 
                 tag = tags{ i };
                 range = value_ranges( tag );
-                values( tag ) = mean( [ range.min range.max ] );
+                values( tag ) = ConstrainedNumericValue( ...
+                    range.min, ...
+                    range.max, ...
+                    mean( [ range.min range.max ] )...
+                    );
+                quantiles( tag ) = ConstrainedNumericValue( 0, 1, 0.5 );
                 
             end
             
             obj.titles = titles;
             obj.value_callback = value_callback;
+            
             obj.values = values;
-            obj.value_ranges = value_ranges;
+            obj.quantiles = quantiles;
             obj.usage_states = containers.Map( tags, true( count, 1 ) );
-            obj.quantiles = containers.Map( tags, 0.5 * ones( count, 1 ) );
+            obj.mode = obj.VALUE_TAG;
             
         end
         
@@ -68,14 +78,13 @@ classdef ThresholdSelector < handle
                 'keytype', 'char', ...
                 'valuetype', 'any' ...
                 );
+            v = obj.get_values();
             for i = 1 : count
                 
                 tag = tags{ i };
                 title = obj.titles( tag );
-                value = obj.values( tag );
-                value_range = obj.value_ranges( tag );
+                value = v( tag );
                 value_usage_state = obj.usage_states( tag );
-                quantile = obj.quantiles( tag );
                 y_pos = h.Position( 4 ) - ...
                     ( ThresholdSelectorWidget.get_height( obj.FONT_SIZE ) + ...
                     obj.VERTICAL_PAD ) * ( i + 1 );
@@ -89,9 +98,7 @@ classdef ThresholdSelector < handle
                     tag, ...
                     title, ...
                     value, ...
-                    value_range, ...
-                    value_usage_state, ...
-                    quantile ...
+                    value_usage_state ...
                     );
                 
             end
@@ -107,7 +114,8 @@ classdef ThresholdSelector < handle
                 h, ...
                 mode_selector_position, ...
                 obj.FONT_SIZE, ...
-                @obj.mode_selection_callback ...
+                @obj.mode_selection_callback, ...
+                obj.mode ...
                 );
             
             obj.figure_handle = h;
@@ -119,7 +127,6 @@ classdef ThresholdSelector < handle
         function set_background_color( obj, color )
             
             if ~isempty( obj.figure_handle )
-                
                 obj.figure_handle.Color = color;
                 count = obj.titles.Count();
                 tags = obj.titles.keys();
@@ -139,7 +146,17 @@ classdef ThresholdSelector < handle
         
         function values = get_thresholds( obj )
             
-            values = obj.values;
+            v = obj.get_values();
+            tags = v.keys();
+            values = containers.Map( ...
+                'keytype', 'char', ...
+                'valuetype', 'double' ...
+                );
+            for i = 1 : v.Count()
+                
+                values( tags{ i } ) = v( tags{ i } ).get_value();
+                
+            end
             
         end
         
@@ -147,6 +164,20 @@ classdef ThresholdSelector < handle
         function states = get_usage_states( obj )
             
             states = obj.usage_states;
+            
+        end
+        
+        
+        function using = is_using_quantiles( obj )
+            
+            using = strcmpi( obj.get_mode(), obj.QUANTILE_TAG );
+            
+        end
+        
+        
+        function mode = get_mode( obj )
+            
+            mode = obj.mode;
             
         end
         
@@ -158,20 +189,21 @@ classdef ThresholdSelector < handle
         value_callback
         titles
         values
-        value_ranges
-        usage_states
         quantiles
-        modes
+        usage_states
         
         figure_handle
         mode_selector
-        mode_key
+        mode
         subwidgets
         
     end
     
     
     properties ( Access = private, Constant )
+        
+        VALUE_TAG = 'value';
+        QUANTILE_TAG = 'quantile';
         
         % TODO factor these out
         VERTICAL_PAD = 6;
@@ -205,7 +237,8 @@ classdef ThresholdSelector < handle
         function widget_value_callback( obj, h, e, widget )
             
             if widget.update_value( h.Style )
-                obj.values( widget.get_tag() ) = widget.get_value();
+                v = obj.values( widget.get_tag() );
+                v.update( widget.get_value() );
                 obj.value_callback( h, e );
             end
             
@@ -214,16 +247,33 @@ classdef ThresholdSelector < handle
         
         function mode_selection_callback( obj, h, e )
             
+            obj.mode = e.NewValue.Tag;
+            
             count = obj.titles.Count();
             tags = obj.titles.keys();
+            v = obj.get_values();
             for i = 1 : count
                 
                 tag = tags{ i };
                 wh = obj.subwidgets( tag );
-                wh.switch_mode( e.NewValue.Value );
+                wh.change_constrained_value( v( tag ) );
                 
             end
             obj.value_callback( h, e );
+            
+        end
+        
+        
+        function values = get_values( obj )
+            
+            switch obj.get_mode()
+                case obj.VALUE_TAG
+                    values = obj.values;
+                case obj.QUANTILE_TAG
+                    values = obj.quantiles;
+                otherwise
+                    assert( false );
+            end
             
         end
         
@@ -237,7 +287,8 @@ classdef ThresholdSelector < handle
                 parent, ...
                 position, ...
                 font_size, ...
-                selection_changed_function ...
+                selection_changed_function, ...
+                current_mode ...
                 )
             
             group_h = uibuttongroup();
@@ -261,6 +312,7 @@ classdef ThresholdSelector < handle
                 ];
             values_h.String = 'Values';
             values_h.FontSize = font_size;
+            values_h.Tag = ThresholdSelector.VALUE_TAG;
             values_h.Parent = group_h;
             
             quantiles_h = uicontrol();
@@ -273,7 +325,17 @@ classdef ThresholdSelector < handle
                 ];
             quantiles_h.String = 'Quantiles';
             quantiles_h.FontSize = font_size;
+            quantiles_h.Tag = ThresholdSelector.QUANTILE_TAG;
             quantiles_h.Parent = group_h;
+            
+            switch current_mode
+                case ThresholdSelector.VALUE_TAG
+                    values_h.Value = 1;
+                case ThresholdSelector.QUANTILE_TAG
+                    quantiles_h.Value = 1;
+                otherwise
+                    assert( false )
+            end
             
         end
         

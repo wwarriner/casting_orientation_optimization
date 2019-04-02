@@ -19,21 +19,12 @@ classdef ThresholdSelectorWidget < handle
                 check_box_update_callback, ...
                 tag, ...
                 title, ...
-                value, ...
-                value_range, ...
-                value_usage_state, ...
-                quantile ...
+                constrained_value, ...
+                value_usage_state ...
                 )
             
             obj.tag = tag;
-            obj.value = ConstrainedNumericValue( ...
-                value_range.min, ...
-                value_range.max, ...
-                value ...
-                );
-            obj.value_range = value_range;
-            obj.quantile = ConstrainedNumericValue( 0, 1, quantile );
-            obj.mode = obj.VALUE_MODE;
+            obj.value = constrained_value;
             
             check_box_update_cb = @(h,e)check_box_update_callback(h,e,obj);
             check_box_position = [ ...
@@ -74,7 +65,7 @@ classdef ThresholdSelectorWidget < handle
                 figure_handle, ...
                 value_editor_position, ...
                 font_size, ...
-                value, ...
+                constrained_value.get_value(), ...
                 value_update_cb ...
                 );
             
@@ -87,8 +78,8 @@ classdef ThresholdSelectorWidget < handle
             obj.slider_handle = obj.create_slider( ...
                 figure_handle, ...
                 slider_position, ...
-                value, ...
-                value_range, ...
+                constrained_value.get_value(), ...
+                constrained_value.get_range(), ...
                 value_update_cb ...
                 );
             
@@ -99,32 +90,23 @@ classdef ThresholdSelectorWidget < handle
             
             new_value = obj.get_new_value( style );
             changed = obj.update_internal_value( new_value );
-            obj.update_handle_values( new_value );
+            obj.update_handle_values();
             
         end
         
         
-        function switch_mode( obj, mode )
+        function change_constrained_value( obj, new_value )
             
-            obj.mode = mode;
-            mode_value = obj.select_mode_value( obj.mode );
-            obj.update_handle_values( mode_value.get_value() );
+            obj.value = new_value;
+            obj.update_handle_values();
             obj.update_handle_ranges();
-            
-        end
-        
-        
-        function using = is_using_quantiles( obj )
-            
-            using = obj.mode == obj.QUANTILE_MODE;
             
         end
         
         
         function value = get_value( obj )
             
-            mode_value = obj.select_mode_value( obj.mode );
-            value = mode_value.get_value();
+            value = obj.value.get_value();
             
         end
         
@@ -184,9 +166,6 @@ classdef ThresholdSelectorWidget < handle
         
         tag
         value
-        value_range
-        quantile
-        mode
         
     end
     
@@ -220,38 +199,23 @@ classdef ThresholdSelectorWidget < handle
         
         function changed = update_internal_value( obj, new_value )
             
-            mode_value = obj.select_mode_value( obj.mode );
-            changed = mode_value.update( new_value );
+            changed = obj.value.update( new_value );
             
         end
         
         
-        function update_handle_values( obj, new_value )
+        function update_handle_values( obj )
             
-            obj.slider_handle.Value = new_value;
-            obj.edit_text_handle.String = num2str( new_value );
+            obj.slider_handle.Value = obj.value.get_value();
+            obj.edit_text_handle.String = num2str( obj.value.get_value() );
             
         end
         
         
         function update_handle_ranges( obj )
             
-            mode_value = obj.select_mode_value( obj.mode );
-            obj.slider_handle.Min = mode_value.get_min();
-            obj.slider_handle.Max = mode_value.get_max();
-            
-        end
-        
-        
-        function value = select_mode_value( obj, mode )
-            switch mode
-                case obj.VALUE_MODE
-                    value = obj.value;
-                case obj.QUANTILE_MODE
-                    value = obj.quantile;
-                otherwise
-                    assert( false );
-            end
+            obj.slider_handle.Min = obj.value.get_min();
+            obj.slider_handle.Max = obj.value.get_max();
             
         end
         
