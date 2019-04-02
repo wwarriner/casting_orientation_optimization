@@ -7,6 +7,7 @@ classdef ParallelPlotWidget < handle
                 pareto_front_table ...
                 )
             
+            % TODO make me interactive!
             obj.titles = titles;
             obj.data = pareto_front_table;
             
