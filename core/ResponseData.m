@@ -131,7 +131,8 @@ classdef ResponseData < handle
         function values = get_no_go_values( ...
                 obj, ...
                 thresholds, ...
-                usage_states ...
+                usage_states, ...
+                use_quantiles ...
                 )
             
             count = thresholds.Count();
@@ -145,7 +146,12 @@ classdef ResponseData < handle
                 end
                 
                 threshold = thresholds( tag );
-                values = values & ~next;
+                if use_quantiles
+                    above = obj.get_quantile_values( threshold, tag );
+                else
+                    above = obj.get_thresholded_values( threshold, tag );
+                end
+                values = values & ~above;
                 
             end
             values = ~values;
