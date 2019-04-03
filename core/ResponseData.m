@@ -11,9 +11,18 @@ classdef ResponseData < handle
             obj.minima = data_extractor.get_minima_points();
             obj.pareto_front = data_extractor.get_pareto_front_points();
             obj.pareto_front_values = data_extractor.get_pareto_front_values();
-            obj.quantiles = data_extractor.get_quantile_interpolants( obj.values );
+            obj.inverse_quantile_interps = data_extractor.get_quantile_inverse_interpolants( obj.values );
             obj.phi_grid = data_extractor.get_phi_grid();
             obj.theta_grid = data_extractor.get_theta_grid();
+            
+            obj.quantiles = obj.convert_to_quantiles( ...
+                obj.values, ...
+                obj.inverse_quantile_interps ...
+                );
+            obj.pareto_front_quantiles = obj.convert_to_quantiles( ...
+                obj.pareto_front_values, ...
+                obj.inverse_quantile_interps ...
+                );
             
         end
         
@@ -32,9 +41,23 @@ classdef ResponseData < handle
         end
         
         
+        function sz = get_grid_size( obj )
+            
+            sz = size( obj.get_phi_grid() );
+            
+        end
+        
+        
         function titles = get_titles( obj )
             
             titles = obj.titles;
+            
+        end
+        
+        
+        function tags = get_tags( obj )
+            
+            tags = obj.titles.keys();
             
         end
         
@@ -70,19 +93,16 @@ classdef ResponseData < handle
         end
         
         
-        function tbl = get_pareto_front_table( obj )
+        function values = get_pareto_front_values( obj )
             
-            tags = obj.titles.keys();
-            v = nan( size( obj.pareto_front, 1 ), obj.get_count );
-            for i = 1 : obj.titles.Count()
+            values = obj.pareto_front_values;
             
-                tag = tags{ i };
-                v( :, i ) = obj.pareto_front_values( tag );
-                
-            end
+        end
+        
+        
+        function quantiles = get_pareto_front_quantiles( obj )
             
-            tbl = array2table( v );
-            tbl.Properties.VariableNames = tags;
+            quantiles = obj.pareto_front_quantiles;
             
         end
         
@@ -126,14 +146,18 @@ classdef ResponseData < handle
         end
         
         
-        function values = get_quantile_values( obj, quantile, objective )
+        function quantile = get_quantile_value( obj, point, objective )
             
-            assert( 0 <= quantile );
-            assert( quantile <= 1 );
+            value = obj.get_objective_value( point, objective );
+            interpolant = obj.inverse_quantile_interps( objective );
+            quantile = interpolant( value );
             
-            interpolant = obj.quantiles( objective );
-            threshold = interpolant( quantile );
-            values = obj.get_thresholded_values( threshold, objective );
+        end
+        
+        
+        function quantiles = get_quantile_values( obj, objective )
+            
+            quantiles = obj.quantiles( objective );
             
         end
         
@@ -196,10 +220,12 @@ classdef ResponseData < handle
         name
         titles
         values
+        quantiles
         minima
         pareto_front
         pareto_front_values
-        quantiles
+        pareto_front_quantiles
+        inverse_quantile_interps
         phi_grid
         theta_grid
         
@@ -226,6 +252,29 @@ classdef ResponseData < handle
                 );
             theta_index = min( theta_index, size( obj.theta_grid, 1 ) );
             indices( THETA_INDEX ) = max( theta_index, 1 );
+            
+        end
+        
+    end
+    
+    
+    % construction
+    methods ( Access = private, Static )
+        
+        function quantiles = convert_to_quantiles( values, interps )
+            
+            tags = values.keys();
+            quantiles = containers.Map( ...
+                'keytype', 'char', ...
+                'valuetype', 'any' ...
+                );
+            for i = 1 : values.Count()
+                
+                tag = tags{ i };
+                interp = interps( tag );
+                quantiles( tag ) = interp( values( tag ) );
+                
+            end
             
         end
         

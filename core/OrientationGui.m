@@ -8,6 +8,8 @@ classdef (Sealed) OrientationGui < handle
                 figure_resolution_px ...
                 )
             
+            filter = DataFilter( response_data );
+            
             obj.create_figure( ...
                 figure_resolution_px, ...
                 response_data.get_name(), ...
@@ -18,17 +20,20 @@ classdef (Sealed) OrientationGui < handle
                 );
             obj.create_threshold_selector( ...
                 response_data.get_titles(), ...
-                response_data.get_objective_value_ranges() ...
+                response_data.get_objective_value_ranges(), ...
+                filter ...
                 );
             obj.create_parallel_plot( ...
                 response_data.get_titles(), ...
-                response_data.get_pareto_front_table() ...
+                filter ...
                 );
             
             obj.data = response_data;
+            obj.data_filter = filter;
             
+            obj.axes_widget.activate( obj.figure_handle );
             obj.update_value_range();
-            obj.update_surface_plots( obj.UPDATE_COLOR_BAR );
+            obj.update_surface_plots();
             
             obj.picked_point = [ 0 0 ];
             obj.update_picked_point();
@@ -59,6 +64,7 @@ classdef (Sealed) OrientationGui < handle
             obj.thresholder.set_background_color( bg_color );
             obj.point_plotter.set_background_color( bg_color );
             obj.threshold_selector.set_background_color( bg_color );
+            obj.parallel_plotter.set_background_color( bg_color );
             
             obj.background_color = bg_color;
             
@@ -70,6 +76,7 @@ classdef (Sealed) OrientationGui < handle
     properties ( Access = private )
         
         data
+        data_filter
         picked_point
         
         background_color
@@ -126,7 +133,7 @@ classdef (Sealed) OrientationGui < handle
         
         function update_picked_point( obj )
             
-            value = obj.data.get_objective_value( ...
+            value = obj.data_filter.get_value( ...
                 deg2rad( obj.picked_point ), ...
                 obj.get_selected_objective() ...
                 );
@@ -146,25 +153,25 @@ classdef (Sealed) OrientationGui < handle
         end
         
         
-        function update_surface_plots( obj, do_update_color_bar )
+        function update_surface_plots( obj )
             
-            if nargin < 2
-                do_update_color_bar = false;
-            end
-            value_range = obj.get_value_range();
             values = obj.thresholder.pick_selected_values();
-            scaled_values = rescale( values, value_range.min, value_range.max );
-            obj.surface_plotter.update_surface_plot( scaled_values );
-            if do_update_color_bar
-                obj.axes_widget.update_color_bar( value_range );
-            end
+            values = double( values );
+            %scaled_values = rescale( values, value_range.min, value_range.max );
+            obj.surface_plotter.update_surface_plot( values );
+            %if do_update_color_bar
+                range.min = min( values( : ) );
+                range.max = max( values( : ) );
+                obj.axes_widget.update_color_bar( range );
+            %end
             
         end
         
         
-        function values = get_value_range( obj )
+        function range = get_value_range( obj )
             
-            values = obj.data.get_objective_value_range( obj.get_selected_objective() );
+            threshold = obj.data_filter.get_threshold( obj.get_selected_objective() );
+            range = threshold.get_range();
             
         end
         
@@ -188,6 +195,7 @@ classdef (Sealed) OrientationGui < handle
             % HACK order matters, determines tab order
             wf = WidgetFactory( figure_resolution_px );
             h = wf.create_figure( figure_title );
+            h.CloseRequestFcn = @obj.on_close;
             
             obj.picked_point_reporter = wf.add_picked_point_reporter_widget( ...
                 h ...
@@ -221,19 +229,16 @@ classdef (Sealed) OrientationGui < handle
             types = containers.Map( ids, { ...
                 SimpleOption.get_type(), ...
                 ValueOption.get_type(), ...
-                QuantileOption.get_type(), ...
                 ButtonOption.get_type() ...
                 } );
             picker_fns = containers.Map( ids, { ...
                 @obj.value_picker_objective_values, ...
                 @obj.value_picker_thresholded_values, ...
-                @obj.value_picker_quantile_values, ...
                 @obj.value_picker_no_go_values ...
                 } );
             labels = containers.Map( ids, { ...
                 'Threshold Off', ...
                 'Value Threshold', ...
-                'Quantile Threshold', ...
                 'Go/No-Go' ...
                 } );
             no_go_button_label = 'Select thresholds...';
@@ -265,14 +270,17 @@ classdef (Sealed) OrientationGui < handle
         function create_threshold_selector( ...
                 obj, ...
                 titles, ...
-                value_ranges ...
+                value_ranges, ...
+                data_filter ...
                 )
             
             obj.threshold_selector = ThresholdSelector( ...
                 @obj.ui_threshold_selector_update_Callback, ...
                 titles, ...
-                value_ranges ...
+                value_ranges, ...
+                data_filter ...
                 );
+            obj.threshold_selector.draw();
             
         end
         
@@ -280,13 +288,14 @@ classdef (Sealed) OrientationGui < handle
         function create_parallel_plot( ...
                 obj, ...
                 titles, ...
-                pareto_front_table ...
+                data_filter ...
                 )
             
             obj.parallel_plotter = ParallelPlotWidget( ...
                 titles, ...
-                pareto_front_table ...
+                data_filter ...
                 );
+            obj.parallel_plotter.draw();
             
         end
         
@@ -301,7 +310,7 @@ classdef (Sealed) OrientationGui < handle
             obj.axes_widget.activate( obj.figure_handle );
             if widget.update_selection()
                 obj.update_value_range();
-                obj.update_surface_plots( obj.UPDATE_COLOR_BAR );
+                obj.update_surface_plots();
                 obj.update_points();
             end
             drawnow();
@@ -340,16 +349,16 @@ classdef (Sealed) OrientationGui < handle
             obj.update_points();
             drawnow();
             
-            obj.threshold_selector.draw();
-            obj.threshold_selector.set_background_color( obj.background_color );
-            
-            obj.parallel_plotter.draw();
-            obj.parallel_plotter.set_background_color( obj.background_color );
-            
-            obj.parallel_plotter.update_thresholds( ...
-                obj.threshold_selector.get_thresholds(), ...
-                obj.threshold_selector.get_usage_states() ...
-                );
+%             obj.threshold_selector.draw();
+%             obj.threshold_selector.set_background_color( obj.background_color );
+%             
+%             obj.parallel_plotter.draw();
+%             obj.parallel_plotter.set_background_color( obj.background_color );
+%             
+%             obj.parallel_plotter.update_thresholds( ...
+%                 obj.threshold_selector.get_thresholds(), ...
+%                 obj.threshold_selector.get_usage_states() ...
+%                 );
             
         end
         
@@ -389,54 +398,53 @@ classdef (Sealed) OrientationGui < handle
             obj.axes_widget.activate( obj.figure_handle );
             obj.update_surface_plots();
             obj.update_points();
-            obj.parallel_plotter.update_thresholds( ...
-                obj.threshold_selector.get_thresholds(), ...
-                obj.threshold_selector.get_usage_states() ...
-                );
+            obj.parallel_plotter.update_thresholds();
             drawnow();
+            
+        end
+        
+        
+        function ui_mode_changed_Callback( obj, ~, ~ )
+            
+            obj.axes_widget.activate( obj.figure_handle );
+            obj.update_surface_plots();
+            obj.update_points();
+            obj.parallel_plotter.update_lines();
+            drawnow();
+            
+        end
+        
+        
+        function on_close( obj, ~, ~ )
+            
+            obj.threshold_selector.close();
+            obj.parallel_plotter.close();
+            closereq();
             
         end
         
         
         function values = value_picker_objective_values( obj, ~ )
             
-            values = obj.data.get_objective_values( ...
+            values = obj.data_filter.get_values( ...
                 obj.get_selected_objective() ...
                 );
             
         end
         
         
-        function values = value_picker_quantile_values( obj, quantile )
+        function values = value_picker_thresholded_values( obj, ~ )
             
-            values = obj.data.get_quantile_values( ...
-                quantile, ...
+            values = obj.data_filter.get_thresholded_values( ...
                 obj.get_selected_objective() ...
                 );
-            values = double( values );
-            
-        end
-        
-        
-        function values = value_picker_thresholded_values( obj, threshold )
-            
-            values = obj.data.get_thresholded_values( ...
-                threshold, ...
-                obj.get_selected_objective() ...
-                );
-            values = double( values );
             
         end
         
         
         function values = value_picker_no_go_values( obj, ~ )
             
-            values = obj.data.get_no_go_values( ...
-                obj.threshold_selector.get_thresholds(), ...
-                obj.threshold_selector.get_usage_states(), ...
-                obj.threshold_selector.is_using_quantiles() ...
-                );
-            values = double( values );
+            values = obj.data_filter.get_composited_values();
             
         end
         

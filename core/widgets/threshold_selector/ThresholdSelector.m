@@ -3,9 +3,11 @@ classdef ThresholdSelector < handle
     methods ( Access = public )
         
         function obj = ThresholdSelector( ...
+                mode_change_callback, ...
                 value_callback, ...
                 titles, ...
-                value_ranges ...
+                value_ranges, ...
+                data_filter ...
                 )
             
             count = titles.Count();
@@ -33,12 +35,9 @@ classdef ThresholdSelector < handle
             end
             
             obj.titles = titles;
+            obj.mode_change_callback;
             obj.value_callback = value_callback;
-            
-            obj.values = values;
-            obj.quantiles = quantiles;
-            obj.usage_states = containers.Map( tags, true( count, 1 ) );
-            obj.mode = obj.VALUE_TAG;
+            obj.data_filter = data_filter;
             
         end
         
@@ -78,13 +77,12 @@ classdef ThresholdSelector < handle
                 'keytype', 'char', ...
                 'valuetype', 'any' ...
                 );
-            v = obj.get_values();
             for i = 1 : count
                 
                 tag = tags{ i };
                 title = obj.titles( tag );
-                value = v( tag );
-                value_usage_state = obj.usage_states( tag );
+                value = obj.data_filter.get_threshold( tag );
+                value_usage_state = obj.data_filter.get_usage_state( tag );
                 y_pos = h.Position( 4 ) - ...
                     ( ThresholdSelectorWidget.get_height( obj.FONT_SIZE ) + ...
                     obj.VERTICAL_PAD ) * ( i + 1 );
@@ -114,8 +112,7 @@ classdef ThresholdSelector < handle
                 h, ...
                 mode_selector_position, ...
                 obj.FONT_SIZE, ...
-                @obj.mode_selection_callback, ...
-                obj.mode ...
+                @obj.mode_selection_callback ...
                 );
             
             obj.figure_handle = h;
@@ -144,40 +141,9 @@ classdef ThresholdSelector < handle
         end
         
         
-        function values = get_thresholds( obj )
+        function close( obj )
             
-            v = obj.get_values();
-            tags = v.keys();
-            values = containers.Map( ...
-                'keytype', 'char', ...
-                'valuetype', 'double' ...
-                );
-            for i = 1 : v.Count()
-                
-                values( tags{ i } ) = v( tags{ i } ).get_value();
-                
-            end
-            
-        end
-        
-        
-        function states = get_usage_states( obj )
-            
-            states = obj.usage_states;
-            
-        end
-        
-        
-        function using = is_using_quantiles( obj )
-            
-            using = strcmpi( obj.get_mode(), obj.QUANTILE_TAG );
-            
-        end
-        
-        
-        function mode = get_mode( obj )
-            
-            mode = obj.mode;
+            close( obj.figure_handle, 'force' );
             
         end
         
@@ -188,13 +154,10 @@ classdef ThresholdSelector < handle
         
         value_callback
         titles
-        values
-        quantiles
-        usage_states
+        data_filter
         
         figure_handle
         mode_selector
-        mode
         subwidgets
         
     end
@@ -219,16 +182,19 @@ classdef ThresholdSelector < handle
         
         function on_close( obj, ~, ~ )
             
-            obj.figure_handle = [];
-            obj.subwidgets = [];
-            closereq();
+%             obj.figure_handle = [];
+%             obj.subwidgets = [];
+%             closereq();
             
         end
         
         
         function widget_check_box_callback( obj, h, e, widget )
             
-            obj.usage_states( widget.get_tag() ) = widget.get_usage_state();
+            obj.data_filter.set_usage_state( ...
+                widget.get_tag(), ...
+                widget.get_usage_state() ...
+                );
             obj.value_callback( h, e );
             
         end
@@ -237,8 +203,10 @@ classdef ThresholdSelector < handle
         function widget_value_callback( obj, h, e, widget )
             
             if widget.update_value( h.Style )
-                v = obj.values( widget.get_tag() );
-                v.update( widget.get_value() );
+                obj.data_filter.set_threshold( ...
+                    widget.get_tag(), ...
+                    widget.get_value() ...
+                    );
                 obj.value_callback( h, e );
             end
             
@@ -247,33 +215,19 @@ classdef ThresholdSelector < handle
         
         function mode_selection_callback( obj, h, e )
             
-            obj.mode = e.NewValue.Tag;
+            obj.data_filter.set_mode( e.NewValue.Tag );
             
             count = obj.titles.Count();
             tags = obj.titles.keys();
-            v = obj.get_values();
             for i = 1 : count
                 
                 tag = tags{ i };
                 wh = obj.subwidgets( tag );
-                wh.change_constrained_value( v( tag ) );
+                v = obj.data_filter.get_threshold( tag );
+                wh.change_constrained_value( v );
                 
             end
-            obj.value_callback( h, e );
-            
-        end
-        
-        
-        function values = get_values( obj )
-            
-            switch obj.get_mode()
-                case obj.VALUE_TAG
-                    values = obj.values;
-                case obj.QUANTILE_TAG
-                    values = obj.quantiles;
-                otherwise
-                    assert( false );
-            end
+            obj.mode_changed_callback( h, e );
             
         end
         
@@ -287,8 +241,7 @@ classdef ThresholdSelector < handle
                 parent, ...
                 position, ...
                 font_size, ...
-                selection_changed_function, ...
-                current_mode ...
+                selection_changed_function ...
                 )
             
             group_h = uibuttongroup();
@@ -312,8 +265,9 @@ classdef ThresholdSelector < handle
                 ];
             values_h.String = 'Values';
             values_h.FontSize = font_size;
-            values_h.Tag = ThresholdSelector.VALUE_TAG;
+            values_h.Tag = DataFilter.VALUE_MODE;
             values_h.Parent = group_h;
+            values_h.Value = true;
             
             quantiles_h = uicontrol();
             quantiles_h.Style = 'radiobutton';
@@ -325,17 +279,8 @@ classdef ThresholdSelector < handle
                 ];
             quantiles_h.String = 'Quantiles';
             quantiles_h.FontSize = font_size;
-            quantiles_h.Tag = ThresholdSelector.QUANTILE_TAG;
+            quantiles_h.Tag = DataFilter.QUANTILE_MODE;
             quantiles_h.Parent = group_h;
-            
-            switch current_mode
-                case ThresholdSelector.VALUE_TAG
-                    values_h.Value = 1;
-                case ThresholdSelector.QUANTILE_TAG
-                    quantiles_h.Value = 1;
-                otherwise
-                    assert( false )
-            end
             
         end
         

@@ -138,6 +138,9 @@ classdef AxesWidget < handle
             
             colorbar( obj.axes_handle, 'off' );
             color_bar_handle = colorbar( obj.axes_handle );
+            if color_bar_range.min == color_bar_range.max
+                color_bar_range.min = 0;
+            end
             caxis( [ color_bar_range.min color_bar_range.max ] );
             clim = color_bar_handle.Limits;
             COLORBAR_TICK_COUNT = 11;

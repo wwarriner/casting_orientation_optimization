@@ -187,6 +187,26 @@ classdef DataExtractor < handle
             
         end
         
+        
+        function interpolators = get_quantile_inverse_interpolants( obj, objective_values )
+            
+            interpolators = containers.Map( ...
+                'keytype', 'char', ...
+                'valuetype', 'any' ...
+                );
+            for i = 1 : obj.objective_count
+                
+                tag = obj.get_tag( i );
+                interpolators( tag ) = generate_unit_sphere_quantile_inverse_interpolant( ...
+                    obj.theta_grid, ...
+                    objective_values( tag ), ...
+                    'linear' ...
+                    );
+                
+            end
+            
+        end
+        
     end
     
     
