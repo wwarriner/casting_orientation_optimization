@@ -35,7 +35,7 @@ classdef ThresholdSelector < handle
             end
             
             obj.titles = titles;
-            obj.mode_change_callback;
+            obj.mode_change_callback = mode_change_callback;
             obj.value_callback = value_callback;
             obj.data_filter = data_filter;
             
@@ -135,7 +135,11 @@ classdef ThresholdSelector < handle
                     
                 end
                 obj.mode_selector.BackgroundColor = color;
-                
+                for i = 1 : numel( obj.mode_selector.Children )
+                    
+                    obj.mode_selector.Children( i ).BackgroundColor = color;
+                    
+                end
             end
             
         end
@@ -152,6 +156,7 @@ classdef ThresholdSelector < handle
     
     properties ( Access = private )
         
+        mode_change_callback
         value_callback
         titles
         data_filter
@@ -227,7 +232,7 @@ classdef ThresholdSelector < handle
                 wh.change_constrained_value( v );
                 
             end
-            obj.mode_changed_callback( h, e );
+            obj.mode_change_callback( h, e );
             
         end
         

@@ -77,12 +77,30 @@ classdef DataFilter < handle
                 if ~obj.value_usage_states( tag )
                     continue;
                 end
-                
                 below = obj.get_thresholded_values( tag );
                 values = values & below;
                 
             end
             values = ~values;
+            
+        end
+        
+        
+        function below = is_pareto_front_below_thresholds( obj )
+            
+            tags = obj.get_tags();
+            below = true( obj.get_pareto_front_count(), 1 );
+            pf = obj.get_pareto_front_values();
+            for i = 1 : obj.get_count()
+                
+                tag = tags{ i };
+                if ~obj.value_usage_states( tag )
+                    continue;
+                end
+                current_below = pf( tag ) < obj.get_raw_threshold_value( tag );
+                below = below & current_below;
+                
+            end
             
         end
         

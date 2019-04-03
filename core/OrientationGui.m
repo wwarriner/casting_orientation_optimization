@@ -118,7 +118,10 @@ classdef (Sealed) OrientationGui < handle
             
             % color pareto front points differently based on parallel plot etc
             points = rad2deg( obj.data.get_pareto_front() );
-            obj.point_plotter.update_pareto_front( points );
+            obj.point_plotter.update_pareto_front( ...
+                points, ...
+                obj.data_filter.is_pareto_front_below_thresholds() ...
+                );
             
         end
         
@@ -275,6 +278,7 @@ classdef (Sealed) OrientationGui < handle
                 )
             
             obj.threshold_selector = ThresholdSelector( ...
+                @obj.ui_mode_changed_Callback, ...
                 @obj.ui_threshold_selector_update_Callback, ...
                 titles, ...
                 value_ranges, ...
@@ -417,8 +421,12 @@ classdef (Sealed) OrientationGui < handle
         
         function on_close( obj, ~, ~ )
             
-            obj.threshold_selector.close();
-            obj.parallel_plotter.close();
+            if ~isempty( obj.threshold_selector )
+                obj.threshold_selector.close();
+            end
+            if ~isempty( obj.parallel_plotter )
+                obj.parallel_plotter.close();
+            end
             closereq();
             
         end

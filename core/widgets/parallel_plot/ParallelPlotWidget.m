@@ -27,26 +27,8 @@ classdef ParallelPlotWidget < handle
             fh.CloseRequestFcn = @obj.on_close;
             movegui( fh, 'center' );
             
-            % replace with parallelplot in R2019a
-            tags = obj.data_filter.get_tags();
-            v = nan( ...
-                obj.data_filter.get_pareto_front_count(), ...
-                obj.data_filter.get_count() ...
-                );
-            pf = obj.data_filter.get_pareto_front_values();
-            for i = 1 : obj.data_filter.get_count()
-                
-                v( :, i ) = pf( tags{ i } );
-                
-            end
-            v = normalize( v, 1, 'range' );
-            
-            axh = axes( fh );
-            
-            % replace with parallelplot in R2019a
-            
             obj.figure_handle = fh;
-            obj.axes_handle = axh;
+            obj.axes_handle = axes( fh );
             
             obj.update_lines();
             
@@ -62,8 +44,31 @@ classdef ParallelPlotWidget < handle
         end
         
         
+        function indices = get_acceptable_indices( obj )
+            
+            indices = obj.previous_below;
+            
+        end
+        
+        
         function update_lines( obj )
             
+            obj.threshold_handles = [];
+            obj.previous_below = [];
+            
+            % replace with parallelplot in R2019a
+            tags = obj.data_filter.get_tags();
+            v = nan( ...
+                obj.data_filter.get_pareto_front_count(), ...
+                obj.data_filter.get_count() ...
+                );
+            pf = obj.data_filter.get_pareto_front_values();
+            for i = 1 : obj.data_filter.get_count()
+                
+                v( :, i ) = pf( tags{ i } );
+                
+            end
+            v = normalize( v, 1, 'range' );
             obj.line_handles = parallelcoords( obj.axes_handle, v );
             obj.axes_handle.XLim = [ 1 size( v, 2 ) ];
             obj.update_thresholds();
@@ -74,32 +79,7 @@ classdef ParallelPlotWidget < handle
         function update_thresholds( obj )
             
             if ~isempty( obj.figure_handle )
-                tags = obj.data_filter.get_tags();
-                thresholds = obj.data_filter.get_thresholds();
-                nthresh = containers.Map( tags, thresholds.values() );
-                pareto_front = obj.data_filter.get_pareto_front_values();
-                below = true( obj.data_filter.get_pareto_front_count(), 1 );
-                for i = 1 : obj.data_filter.get_count()
-                    
-                    tag = tags{ i };
-                    
-                    v = pareto_front( tag );
-                    raw_threshold_value = obj.data_filter.get_threshold( tag ).get_value();
-                    scaled_threshold = ...
-                        ( raw_threshold_value - min( v( : ) ) ) ./ ...
-                        ( max( v( : ) ) - min( v( : ) ) );
-                    nthresh( tag ) = scaled_threshold;
-                    
-                    if ~obj.data_filter.get_usage_state( tag )
-                        continue;
-                    end
-                    scaled_values = ( v - min( v( : ) ) ) ./ ...
-                        ( max( v( : ) ) - min( v( : ) ) );
-                    above = scaled_threshold < scaled_values;
-                    below = below & ~above;
-                    
-                end
-                
+                below = obj.data_filter.is_pareto_front_below_thresholds();
                 if ~isempty( obj.previous_below )
                     changed = xor( obj.previous_below, below );
                     go_update = changed & below;
@@ -112,6 +92,23 @@ classdef ParallelPlotWidget < handle
                 obj.format_no_go_lines( obj.line_handles( no_go_update ) );
                 obj.previous_below = below;
                 
+                % remove with parallelplot in R2019a
+                tags = obj.data_filter.get_tags();
+                thresholds = obj.data_filter.get_thresholds();
+                nthresh = containers.Map( tags, thresholds.values() );
+                pareto_front = obj.data_filter.get_pareto_front_values();
+                for i = 1 : obj.data_filter.get_count()
+                    
+                    tag = tags{ i };
+                    
+                    v = pareto_front( tag );
+                    raw_threshold_value = obj.data_filter.get_threshold( tag ).get_value();
+                    scaled_threshold = ...
+                        ( raw_threshold_value - min( v( : ) ) ) ./ ...
+                        ( max( v( : ) ) - min( v( : ) ) );
+                    nthresh( tag ) = scaled_threshold;
+                    
+                end
                 obj.update_threshold_markers( nthresh, obj.data_filter.get_usage_states() );
                 
                 obj.axes_handle.YLim = [ 0 1 ];

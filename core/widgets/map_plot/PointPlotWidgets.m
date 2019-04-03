@@ -39,8 +39,10 @@ classdef PointPlotWidgets < handle
             
             obj.minimum_plot_handle = ...
                 AxesPlotHandle( @obj.create_minimum_plot );
-            obj.pareto_front_plot_handle = ...
-                AxesPlotHandle( @obj.create_pareto_front_plot );
+            obj.above_pareto_front_plot_handle = ...
+                AxesPlotHandle( @obj.create_above_pareto_front_plot );
+            obj.below_pareto_front_plot_handle = ...
+                AxesPlotHandle( @obj.create_below_pareto_front_plot );
             
         end
         
@@ -68,14 +70,23 @@ classdef PointPlotWidgets < handle
         end
         
         
-        function update_pareto_front( obj, points )
+        function update_pareto_front( obj, points, highlight_indices )
             
             switch obj.pareto_front_check_box_handle.Value
                 case false
-                    obj.pareto_front_plot_handle.remove();
+                    obj.below_pareto_front_plot_handle.remove();
+                    obj.above_pareto_front_plot_handle.remove();
                 case true
-                    obj.pareto_front_plot_handle.remove();
-                    obj.pareto_front_plot_handle.update( points );
+                    obj.below_pareto_front_plot_handle.remove();
+                    obj.above_pareto_front_plot_handle.remove();
+                    below = points( highlight_indices, : );
+                    if ~isempty( below )
+                        obj.below_pareto_front_plot_handle.update( below );
+                    end
+                    above = points( ~highlight_indices, : );
+                    if ~isempty( above )
+                        obj.above_pareto_front_plot_handle.update( above );
+                    end
                 otherwise
                     assert( false );
             end
@@ -120,7 +131,8 @@ classdef PointPlotWidgets < handle
         pareto_front_check_box_handle
         
         minimum_plot_handle
-        pareto_front_plot_handle
+        above_pareto_front_plot_handle
+        below_pareto_front_plot_handle
         
     end
     
@@ -143,21 +155,35 @@ classdef PointPlotWidgets < handle
             plot_handle.Marker = 's';
             plot_handle.MarkerSize = 8;
             plot_handle.MarkerEdgeColor = 'k';
-            plot_handle.MarkerFaceColor = [ 0.9 0.6 0 ];
+            plot_handle.MarkerFaceColor = [ 0.95 0.9 0.25 ];
             plot_handle.HitTest = 'off';
             
         end
         
         
         % color from http://jfly.iam.u-tokyo.ac.jp/color/#redundant2
-        function plot_handle = create_pareto_front_plot( points )
+        function plot_handle = create_above_pareto_front_plot( points )
             
             plot_handle = add_point_plot( points );
             plot_handle.LineStyle = 'none';
             plot_handle.Marker = 'o';
-            plot_handle.MarkerSize = 4;
-            plot_handle.MarkerEdgeColor = 'k';
+            plot_handle.MarkerSize = 3;
+            plot_handle.MarkerEdgeColor = 'none';
             plot_handle.MarkerFaceColor = [ 0 0.6 0.5 ];
+            plot_handle.HitTest = 'off';
+            
+        end
+        
+        
+        % color from http://jfly.iam.u-tokyo.ac.jp/color/#redundant2
+        function plot_handle = create_below_pareto_front_plot( points )
+            
+            plot_handle = add_point_plot( points );
+            plot_handle.LineStyle = 'none';
+            plot_handle.Marker = 'o';
+            plot_handle.MarkerSize = 5;
+            plot_handle.MarkerEdgeColor = 'k';
+            plot_handle.MarkerFaceColor = [ 0.9 0.6 0 ];
             plot_handle.HitTest = 'off';
             
         end
