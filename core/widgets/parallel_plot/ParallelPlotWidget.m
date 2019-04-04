@@ -3,32 +3,49 @@ classdef ParallelPlotWidget < handle
     methods ( Access = public )
         
         function obj = ParallelPlotWidget( ...
-                titles, ...
+                figure_handle, ...
+                corner_pos, ...
+                desired_size, ...
+                font_size, ...
                 data_filter ...
                 )
             
             % TODO make me interactive!
-            obj.titles = titles;
+            
+            h = axes( figure_handle );
+            
+            % adjust size
+            h.Units = 'pixels';
+            x_ratio = 1.18;
+            x_shift = ( 0.75 ) * ( ( x_ratio - 1 ) * desired_size( 1 ) );
+            y_shift = ( 0.7 ) * ( ( x_ratio - 1 ) * desired_size( 2 ) );
+            
+            % axis box
+            axis( h, 'tight', 'manual' );
+            h.Box = 'on';
+            
+            h.OuterPosition = [ ...
+                corner_pos( 1 ) - x_shift ...
+                corner_pos( 2 ) - x_ratio * desired_size( 2 ) - y_shift ...
+                x_ratio * desired_size ...
+                ];
+            
+            % appearance font
+            h.Color = 'none';
+            h.FontSize = font_size;
+            h.LabelFontSizeMultiplier = 1.0;
+            h.TitleFontSizeMultiplier = 1.0;
+            
+            % hit test consistency
+            ch = h.Children;
+            for i = 1 : numel( ch )
+                
+                ch( i ).HitTest = 'off';
+                
+            end
+            
             obj.data_filter = data_filter;
-            
-        end
-        
-        
-        function fh = draw( obj )
-            
-            fh = figure();
-            fh.Name = sprintf( 'Parallel Plot' );
-            fh.NumberTitle = 'off';
-            fh.Position = [ 25 25 1000 500 ];
-            fh.MenuBar = 'none';
-            fh.ToolBar = 'none';
-            fh.DockControls = 'off';
-            fh.Resize = 'off';
-            fh.CloseRequestFcn = @obj.on_close;
-            movegui( fh, 'center' );
-            
-            obj.figure_handle = fh;
-            obj.axes_handle = axes( fh );
+            obj.axes_handle = h;
             
             obj.update_lines();
             
@@ -78,49 +95,46 @@ classdef ParallelPlotWidget < handle
         
         function update_thresholds( obj )
             
-            if ~isempty( obj.figure_handle )
-                below = obj.data_filter.is_pareto_front_below_thresholds();
-                if ~isempty( obj.previous_below )
-                    changed = xor( obj.previous_below, below );
-                    go_update = changed & below;
-                    no_go_update = changed & ~below;
-                else
-                    go_update = below;
-                    no_go_update = ~below;
-                end
-                obj.format_go_lines( obj.line_handles( go_update ) );
-                obj.format_no_go_lines( obj.line_handles( no_go_update ) );
-                obj.previous_below = below;
-                
-                % remove with parallelplot in R2019a
-                tags = obj.data_filter.get_tags();
-                thresholds = obj.data_filter.get_thresholds();
-                nthresh = containers.Map( tags, thresholds.values() );
-                pareto_front = obj.data_filter.get_pareto_front_values();
-                for i = 1 : obj.data_filter.get_count()
-                    
-                    tag = tags{ i };
-                    
-                    v = pareto_front( tag );
-                    raw_threshold_value = obj.data_filter.get_threshold( tag ).get_value();
-                    scaled_threshold = ...
-                        ( raw_threshold_value - min( v( : ) ) ) ./ ...
-                        ( max( v( : ) ) - min( v( : ) ) );
-                    nthresh( tag ) = scaled_threshold;
-                    
-                end
-                obj.update_threshold_markers( nthresh, obj.data_filter.get_usage_states() );
-                
-                obj.axes_handle.YLim = [ 0 1 ];
-                
+            below = obj.data_filter.is_pareto_front_below_thresholds();
+            if ~isempty( obj.previous_below )
+                changed = xor( obj.previous_below, below );
+                go_update = changed & below;
+                no_go_update = changed & ~below;
+            else
+                go_update = below;
+                no_go_update = ~below;
             end
+            obj.format_go_lines( obj.line_handles( go_update ) );
+            obj.format_no_go_lines( obj.line_handles( no_go_update ) );
+            obj.previous_below = below;
+
+            % remove with parallelplot in R2019a
+            tags = obj.data_filter.get_tags();
+            thresholds = obj.data_filter.get_thresholds();
+            nthresh = containers.Map( tags, thresholds.values() );
+            pareto_front = obj.data_filter.get_pareto_front_values();
+            for i = 1 : obj.data_filter.get_count()
+
+                tag = tags{ i };
+
+                v = pareto_front( tag );
+                raw_threshold_value = obj.data_filter.get_threshold( tag ).get_value();
+                scaled_threshold = ...
+                    ( raw_threshold_value - min( v( : ) ) ) ./ ...
+                    ( max( v( : ) ) - min( v( : ) ) );
+                nthresh( tag ) = scaled_threshold;
+
+            end
+            obj.update_threshold_markers( nthresh, obj.data_filter.get_usage_states() );
+
+            obj.axes_handle.YLim = [ 0 1 ];
             
         end
         
         
-        function close( obj )
+        function pos = get_position( obj )
             
-            close( obj.figure_handle, 'force' );
+            pos = obj.axes_handle.OuterPosition;
             
         end
         
@@ -129,10 +143,7 @@ classdef ParallelPlotWidget < handle
     
     properties ( Access = private )
         
-        titles
         data_filter
-        
-        figure_handle
         axes_handle
         line_handles
         threshold_handles
@@ -172,8 +183,8 @@ classdef ParallelPlotWidget < handle
                 obj.create_threshold_markers( thresholds );
             end
             
-            tags = obj.titles.keys();
-            for i = 1 : obj.titles.Count()
+            tags = obj.data_filter.get_tags();
+            for i = 1 : obj.data_filter.get_count()
 
                 tag = tags{ i };
                 th = obj.threshold_handles( tag );
@@ -195,8 +206,8 @@ classdef ParallelPlotWidget < handle
                 'keytype', 'char', ...
                 'valuetype', 'any' ...
                 );
-            tags = obj.titles.keys();
-            for i = 1 : obj.titles.Count()
+            tags = obj.data_filter.get_tags();
+            for i = 1 : obj.data_filter.get_count()
                 
                 tag = tags{ i };
                 th( tag ) = line( ...

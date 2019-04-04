@@ -5,35 +5,55 @@ classdef PointPlotWidgets < handle
         function obj = PointPlotWidgets( ...
                 figure_handle, ...
                 corner_pos, ...
+                x_padding, ...
+                y_padding, ...
                 font_size, ...
                 check_box_callback ...
                 )
+            
+            h = uipanel();
+            h.Title = 'Point Display';
+            h.FontSize = font_size;
+            h.BorderType = 'etchedin';
+            h.BorderWidth = 1;
+            h.Units = 'pixels';
+            height = 2 * ( obj.get_height_each( font_size ) + y_padding ) + ...
+                2 * y_padding + ...
+                font_size;
+            h.Position = [ ...
+                corner_pos ...
+                obj.WIDTH ...
+                height ...
+                ];
+            h.Parent = figure_handle;
             
             min_h = uicontrol();
             min_h.Style = 'checkbox';
             min_h.String = 'Show Minimum';
             min_h.FontSize = font_size;
             min_h.Position = [ ...
-                corner_pos ...
-                obj.MIN_WIDTH ...
-                obj.get_height( font_size ) ...
+                x_padding ...
+                y_padding ...
+                obj.WIDTH ...
+                obj.get_height_each( font_size ) ...
                 ];
             min_h.Callback = check_box_callback;
-            min_h.Parent = figure_handle;
+            min_h.Parent = h;
             
             par_h = uicontrol();
             par_h.Style = 'checkbox';
             par_h.String = 'Show Pareto Front';
             par_h.FontSize = font_size;
             par_h.Position = [ ...
-                corner_pos( 1 ) + obj.MIN_WIDTH ...
-                corner_pos( 2 ) ...
-                obj.PAR_WIDTH ...
-                obj.get_height( font_size ) ...
+                x_padding ...
+                obj.get_height_each( font_size ) + 2 * y_padding ...
+                obj.WIDTH ...
+                obj.get_height_each( font_size ) ...
                 ];
             par_h.Callback = check_box_callback;
-            par_h.Parent = figure_handle;
+            par_h.Parent = h;
             
+            obj.panel_handle = h;
             obj.minimum_check_box_handle = min_h;
             obj.pareto_front_check_box_handle = par_h;
             
@@ -49,6 +69,7 @@ classdef PointPlotWidgets < handle
         
         function set_background_color( obj, color )
             
+            obj.panel_handle.BackgroundColor = color;
             obj.minimum_check_box_handle.BackgroundColor = color;
             obj.pareto_front_check_box_handle.BackgroundColor = color;
             
@@ -96,10 +117,22 @@ classdef PointPlotWidgets < handle
         
         function pos = get_position( obj )
             
-            pos = [ ...
-                obj.minimum_check_box_handle.Position( 1 : 3 ) ...
-                obj.get_width() ...
-                ];
+            pos = obj.panel_handle.Position;
+            
+        end
+        
+        
+        function height = get_height( obj )
+            
+            pos = obj.get_position();
+            height = pos( 4 );
+            
+        end
+        
+        
+        function set_position( obj, pos )
+            
+            obj.panel_handle.Position = pos;
             
         end
         
@@ -108,7 +141,7 @@ classdef PointPlotWidgets < handle
     
     methods ( Access = public, Static )
         
-        function height = get_height( font_size )
+        function height = get_height_each( font_size )
             
             height = get_height( font_size );
             
@@ -127,6 +160,7 @@ classdef PointPlotWidgets < handle
     
     properties ( Access = private )
         
+        panel_handle
         minimum_check_box_handle
         pareto_front_check_box_handle
         
@@ -139,8 +173,7 @@ classdef PointPlotWidgets < handle
     
     properties ( Access = private, Constant )
         
-        MIN_WIDTH = 140;
-        PAR_WIDTH = 140;
+        WIDTH = 140;
         
     end
     

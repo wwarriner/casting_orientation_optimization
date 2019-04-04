@@ -6,18 +6,18 @@ classdef VisualizationWidget < handle
                 figure_handle, ...
                 corner_pos, ...
                 font_size, ...
-                button_callback, ...
-                visualization_generator ...
+                visualization_generator, ...
+                button_callback ...
                 )
             
             h = uicontrol();
             h.Style = 'pushbutton';
-            h.String = 'Visualize Picked Point...';
+            h.String = 'Visualize Selected Point...';
             h.FontSize = font_size;
             h.Position = [ ...
                 corner_pos ...
-                obj.get_width() ...
-                obj.get_height( font_size ) ...
+                obj.WIDTH ...
+                obj.get_height_each( font_size ) ...
                 ];
             h.Callback = button_callback;
             h.Parent = figure_handle;
@@ -65,21 +65,18 @@ classdef VisualizationWidget < handle
             
         end
         
-    end
-    
-    
-    methods ( Access = public, Static )
         
-        function height = get_height( font_size )
+        function height = get_height( obj )
             
-            height = get_height( font_size );
+            pos = obj.get_position();
+            height = pos( 4 );
             
         end
         
         
-        function width = get_width()
+        function set_position( obj, pos )
             
-            width = VisualizationWidget.WIDTH;
+            obj.button_handle.Position = pos;
             
         end
         
@@ -97,6 +94,17 @@ classdef VisualizationWidget < handle
     properties ( Access = private, Constant )
         
         WIDTH = 200;
+        
+    end
+    
+    
+    methods ( Access = private, Static )
+        
+        function height = get_height_each( font_size )
+            
+            height = get_height( font_size );
+            
+        end
         
     end
     

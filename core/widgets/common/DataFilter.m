@@ -199,6 +199,27 @@ classdef DataFilter < handle
             
         end
         
+        
+        function titles = get_titles( obj )
+            
+            titles = obj.response_data.get_titles();
+            
+        end
+        
+    end
+    
+    
+    methods ( Access = public, Static )
+        
+        function modes = get_modes()
+            
+            modes = { ...
+                DataFilter.VALUE_MODE ...
+                DataFilter.QUANTILE_MODE ...
+                };
+            
+        end
+        
     end
     
     

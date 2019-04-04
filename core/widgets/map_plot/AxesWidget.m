@@ -5,6 +5,7 @@ classdef AxesWidget < handle
         function obj = AxesWidget( ...
                 figure_handle, ...
                 corner_pos, ...
+                desired_size, ...
                 font_size, ...
                 button_down_callback ...
                 )
@@ -34,6 +35,18 @@ classdef AxesWidget < handle
                 );
             colormap( h, DEFAULT_COLOR_MAP );
             
+            % adjust size
+            h.Units = 'pixels';
+            x_ratio = 1.25;
+            x_shift = ( 0.75 ) * ( ( x_ratio - 1 ) * desired_size( 1 ) );
+            y_shift = ( 0.65 ) * ( ( x_ratio - 1 ) * desired_size( 2 ) );
+            
+            h.OuterPosition = [ ...
+                corner_pos( 1 ) - x_shift ...
+                corner_pos( 2 ) - x_ratio * desired_size( 2 ) + y_shift ...
+                x_ratio * desired_size ...
+                ];
+            
             % axis box
             axis( h, 'tight', 'manual' );
             h.XLim = h.XLim * 1.05;
@@ -58,14 +71,6 @@ classdef AxesWidget < handle
             h.YLabel.Color = 'k';
             h.YLabel.Visible = 'on';
             
-            % adjust size
-            % todo refactor out
-            dims = figure_handle.InnerPosition( 3 : 4 );
-            ax_dims = dims * 0.70;
-            excess = ( dims - ax_dims ) ./ 2;
-            h.Units = 'pixels';
-            h.Position = [ excess ax_dims ];
-            
             % appearance font
             h.Color = 'none';
             h.FontSize = font_size;
@@ -82,25 +87,6 @@ classdef AxesWidget < handle
                 ch( i ).HitTest = 'off';
                 
             end
-            
-            pos = h.Position;
-            
-            % allows widgets to overlap the top/bottom boundaries
-            NUDGE_FRACTION = 0.05;
-            pos = [ ...
-                pos( 1 ) ...
-                pos( 2 ) - ( NUDGE_FRACTION * pos( 4 ) ) ...
-                pos( 3 ) ...
-                pos( 4 ) - ( 2 * NUDGE_FRACTION * pos( 4 ) ) ...
-                ];
-            
-            % places the axes appropriately
-            pos = [ ...
-                corner_pos ...
-                pos( 3 ) ...
-                pos( 4 ) ...
-                ];
-            h.Position = pos;
             
             obj.axes_handle = h;
             
@@ -179,32 +165,7 @@ classdef AxesWidget < handle
         
         function pos = get_position( obj )
             
-            pos = obj.axes_handle.Position;
-            
-        end
-        
-        
-        function set_position( obj, pos )
-            
-            obj.axes_handle.Position = pos;
-            
-        end
-        
-    end
-    
-    
-    methods ( Access = public )
-        
-        function height = get_height( obj )
-            
-            height = obj.axes_handle.Position( 4 );
-            
-        end
-        
-        
-        function width = get_width( obj )
-            
-            width = obj.axes_handle.Position( 3 );
+            pos = obj.axes_handle.OuterPosition;
             
         end
         
