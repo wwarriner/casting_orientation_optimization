@@ -16,7 +16,8 @@ classdef (Sealed) OrientationGui < handle
                 response_data.get_titles(), ...
                 rad2deg( response_data.get_phi_grid() ), ...
                 rad2deg( response_data.get_theta_grid() ), ...
-                visualization_generator ...
+                visualization_generator, ...
+                filter ...
                 );
             obj.create_threshold_selector( ...
                 response_data.get_titles(), ...
@@ -32,7 +33,6 @@ classdef (Sealed) OrientationGui < handle
             obj.data_filter = filter;
             
             obj.axes_widget.activate( obj.figure_handle );
-            obj.update_value_range();
             obj.update_surface_plots();
             
             obj.picked_point = [ 0 0 ];
@@ -148,14 +148,6 @@ classdef (Sealed) OrientationGui < handle
         end
         
         
-        function update_value_range( obj )
-            
-            value_range = obj.get_value_range();
-            obj.thresholder.update_value_range( value_range );
-            
-        end
-        
-        
         function update_surface_plots( obj )
             
             values = obj.thresholder.pick_selected_values();
@@ -167,14 +159,6 @@ classdef (Sealed) OrientationGui < handle
                 range.max = max( values( : ) );
                 obj.axes_widget.update_color_bar( range );
             %end
-            
-        end
-        
-        
-        function range = get_value_range( obj )
-            
-            threshold = obj.data_filter.get_threshold( obj.get_selected_objective() );
-            range = threshold.get_range();
             
         end
         
@@ -192,7 +176,8 @@ classdef (Sealed) OrientationGui < handle
                 objective_titles, ...
                 phi_grid, ...
                 theta_grid, ...
-                visualization_generator ...
+                visualization_generator, ...
+                data_filter ...
                 )
             
             % HACK order matters, determines tab order
@@ -231,7 +216,7 @@ classdef (Sealed) OrientationGui < handle
             ids = ThresholdingWidgets.get_ids();
             types = containers.Map( ids, { ...
                 SimpleOption.get_type(), ...
-                ValueOption.get_type(), ...
+                SimpleOption.get_type(), ...
                 SimpleOption.get_type() ...
                 } );
             picker_fns = containers.Map( ids, { ...
@@ -310,7 +295,6 @@ classdef (Sealed) OrientationGui < handle
             
             obj.axes_widget.activate( obj.figure_handle );
             if widget.update_selection()
-                obj.update_value_range();
                 obj.update_surface_plots();
                 obj.update_points();
             end
@@ -332,7 +316,7 @@ classdef (Sealed) OrientationGui < handle
         function ui_threshold_value_option_Callback( obj, h, ~, widget )
             
             obj.axes_widget.activate( obj.figure_handle );
-            if widget.update_threshold_value( h.Style )
+            if widget.update_threshold_value( h.Style, obj.get_selected_objective() )
                 widget.select();
                 obj.update_surface_plots();
             end

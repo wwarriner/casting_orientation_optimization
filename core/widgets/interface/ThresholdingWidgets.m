@@ -78,6 +78,7 @@ classdef ThresholdingWidgets < handle
                             y_pos, ...
                             font_size, ...
                             labels( id ), ...
+                            data_filter, ...
                             value_changed_callback ...
                             );
                     case QuantileOption.get_type()
@@ -144,20 +145,6 @@ classdef ThresholdingWidgets < handle
                 h = obj.widget_handles( id );
                 if h.is_selected()
                     values = h.pick_values();
-                end
-                
-            end
-            
-        end
-        
-        
-        function update_value_range( obj, range )
-            
-            for i = 1 : obj.widget_handles.Count()
-                
-                wh = obj.widget_handles( i );
-                if isa( wh, 'ValueOption' ) || isa( wh, 'QuantileOption' )
-                    wh.set_range( range );
                 end
                 
             end

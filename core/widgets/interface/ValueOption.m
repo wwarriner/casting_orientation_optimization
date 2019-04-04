@@ -9,6 +9,7 @@ classdef ValueOption < ThresholdingOption
                 y_pos, ...
                 font_size, ...
                 label, ...
+                data_filter, ...
                 value_changed_callback ...
                 )
             
@@ -39,11 +40,7 @@ classdef ValueOption < ThresholdingOption
                 DEFAULT_VALUE, ...
                 @(h,e)value_changed_callback(h,e,obj) ...
                 );
-            obj.threshold_value = ConstrainedNumericValue( ...
-                DEFAULT_MIN, ...
-                DEFAULT_MAX, ...
-                DEFAULT_VALUE ...
-                );
+            obj.data_filter = data_filter;
             
         end
         
@@ -56,27 +53,19 @@ classdef ValueOption < ThresholdingOption
         end
         
         
-        function set_range( obj, range )
+        function set_threshold_value( obj, tag )
             
-            obj.set_threshold_value_range( range );
-            obj.set_handle_ranges( range );
-            obj.update_handle_values( obj.get_threshold_value() );
+            obj.update_handle_values( obj.get_threshold( tag ) );
             
         end
         
         
-        function value = get_threshold_value( obj )
-            
-            value = obj.threshold_value.get_value();
-            
-        end
-        
-        
-        function changed = update_threshold_value( obj, style )
+        function changed = update_threshold_value( obj, style, tag )
             
             new_value = obj.get_new_value( style );
-            changed = obj.threshold_value.update( new_value );
-            obj.update_handle_values( new_value );
+            changed = new_value ~= obj.get_threshold( tag );
+            obj.data_filter.set_threshold( tag, new_value );
+            obj.update_handle_values( obj.data_filter.get_threshold( tag ) );
             
         end
         
@@ -96,25 +85,12 @@ classdef ValueOption < ThresholdingOption
     
     methods ( Access = protected )
         
-        function set_threshold_value_range( obj, range )
+        function update_handle_values( obj, value )
             
-            obj.threshold_value.set_range( range.min, range.max );
-            
-        end
-        
-        
-        function set_handle_ranges( obj, range )
-            
-            obj.slider_handle.Min = range.min;
-            obj.slider_handle.Max = range.max;
-            
-        end
-        
-        
-        function update_handle_values( obj, new_value )
-            
-            obj.slider_handle.Value = new_value;
-            obj.edit_text_handle.String = num2str( new_value );
+            obj.slider_handle.Min = value.get_min();
+            obj.slider_handle.Max = value.get_max();
+            obj.slider_handle.Value = value.get_value();
+            obj.edit_text_handle.String = num2str( value.get_value() );
             
         end
         
@@ -125,8 +101,7 @@ classdef ValueOption < ThresholdingOption
         
         edit_text_handle
         slider_handle
-        
-        threshold_value
+        data_filter
         
     end
     
@@ -142,6 +117,13 @@ classdef ValueOption < ThresholdingOption
             else
                 assert( false )
             end
+            
+        end
+        
+        
+        function value = get_threshold( obj, tag )
+            
+            value = obj.data_filter.get_threshold( tag );
             
         end
         
