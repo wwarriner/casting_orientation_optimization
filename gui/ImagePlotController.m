@@ -4,9 +4,11 @@ classdef ImagePlotController < handle
         
         function obj = ImagePlotController( ...
                 image_ui_axes, ...
-                orientation_data_model ...
+                orientation_data_model, ...
+                CALLBACK_HACK ... % TODO R2019a
                 )
             
+            obj.callback_hack = CALLBACK_HACK;
             obj.setup_axes( image_ui_axes );
             obj.axes = image_ui_axes;
             obj.model = orientation_data_model;
@@ -23,7 +25,8 @@ classdef ImagePlotController < handle
                     obj.YLIM, ...
                     0 ...
                     );
-                ih.HitTest = 'off';
+                %ih.HitTest = 'off'; % TODO R2019a
+                ih.ButtonDownFcn = obj.callback_hack;
                 obj.image_handle = ih;
                 
                 grayscale_color_map = interp1( ...
@@ -44,6 +47,21 @@ classdef ImagePlotController < handle
                 max( values, [], 'all' ), ...
                 11 ...
                 );
+            
+            % HACK FIX R2019a
+            if ~isempty( obj.dummy_image_handle )
+                delete( obj.dummy_image_handle )
+            end
+            obj.dummy_image_handle = image( ...
+                obj.axes, ...
+                obj.XLIM, ...
+                obj.YLIM, ...
+                0 ...
+                );
+            obj.dummy_image_handle.AlphaData = 0.0;
+            %obj.dummy_image_handle.Visible = 'off';
+            obj.dummy_image_handle.ButtonDownFcn = obj.callback_hack;
+            drawnow();
             
         end
         
@@ -155,7 +173,7 @@ classdef ImagePlotController < handle
         end
         
         
-        function update_clicked( obj )
+        function update_clicked( obj, point )
 
             % color from http://jfly.iam.u-tokyo.ac.jp/color/#redundant2
             if isempty( obj.selected_point_handle )
@@ -172,7 +190,7 @@ classdef ImagePlotController < handle
                 obj.selected_point_handle = sph;
             end
             
-            point = obj.get_axes_point();
+            %point = obj.get_axes_point();
             obj.model.set_selected_angles( point );
             obj.selected_point_handle.XData = point( 1 );
             obj.selected_point_handle.YData = point( 2 );
@@ -194,16 +212,20 @@ classdef ImagePlotController < handle
         selected_point_handle
         model
         
+        callback_hack % TODO R2019a
+        dummy_image_handle
+        
     end
     
     
     properties ( Access = private, Constant )
         
+        DEGREE = char( 176 );
         XLIM = [ -180 180 ];
         YLIM = [ -90 90 ];
         MAJOR_SPACING = 45;
         MINOR_SPACING = 15;
-        THRESHOLD_ALPHA = 0.75;
+        THRESHOLD_ALPHA = 0.5;
         
     end
     
@@ -230,6 +252,8 @@ classdef ImagePlotController < handle
             %axes.Interactions = [];
             axes.HitTest = 'off';
             
+            %axes.XTickFormat = [ '%.0f' ImagePlotController.DEGREE ];
+            % TODO when available
             axes.XAxis.MinorTickValues = axes.XLim( 1 ) : ...
                 ImagePlotController.MINOR_SPACING : ...
                 axes.XLim( 2 );

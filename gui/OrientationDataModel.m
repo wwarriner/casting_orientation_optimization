@@ -281,20 +281,13 @@ classdef OrientationDataModel < handle
         end
         
         
-        function enabled = get_enabled_objectives( obj )
+        function enabled = is_enabled( obj, objective )
             
             switch obj.view
                 case obj.single_view
-                    enabled = containers.Map( ...
-                        obj.get_objectives(), ...
-                        false( obj.get_objective_count(), 1 ) ...
-                        );
-                    enabled( obj.selected_objective ) = true;
+                    enabled = strcmpi( obj.selected_objective, objective );
                 case obj.feasibility_view
-                    enabled = containers.Map( ...
-                        obj.get_objectives(), ...
-                        true( obj.get_objective_count(), 1 ) ...
-                        );
+                    enabled = true;
                 otherwise
                     assert( false );
             end
@@ -302,20 +295,13 @@ classdef OrientationDataModel < handle
         end
         
         
-        function active = get_active_objectives( obj )
+        function active = is_active( obj, objective )
             
             switch obj.view
                 case obj.single_view
-                    active = containers.Map( ...
-                        obj.get_objectives(), ...
-                        false( obj.get_objective_count(), 1 ) ...
-                        );
-                    active( obj.selected_objective ) = true;
+                    active = strcmpi( obj.selected_objective, objective );
                 case obj.feasibility_view
-                    active = containers.Map( ...
-                        obj.active_objectives.keys(), ...
-                        obj.active_objectives.values() ...
-                        );
+                    active = obj.active_objectives( objective );
                 otherwise
                     assert( false );
             end
@@ -325,7 +311,7 @@ classdef OrientationDataModel < handle
         
         function values = get_current_values( obj )
             
-            values = obj.select_values();
+            values = double( obj.select_values() );
             
         end
         
@@ -353,7 +339,7 @@ classdef OrientationDataModel < handle
         
         function values = get_single_threshold_values( obj )
             
-            values = obj.select_single_thresholded_values( obj.selected_objective );
+            values = double( obj.select_single_thresholded_values( obj.selected_objective ) );
             
         end
         
@@ -565,13 +551,6 @@ classdef OrientationDataModel < handle
                 otherwise
                     assert( false );
             end
-            
-        end
-        
-        
-        function is = is_active( obj, objective )
-            
-            is = obj.active_objectives( objective );
             
         end
         
