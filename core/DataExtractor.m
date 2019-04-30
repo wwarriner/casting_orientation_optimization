@@ -2,8 +2,9 @@ classdef DataExtractor < handle
     
     methods ( Access = public )
         
-        function obj = DataExtractor( data_table, metadata, resolution )
+        function obj = DataExtractor( data_table, resolution )
             
+            metadata = data_table.Properties.UserData;
             name = metadata.Name;
             
             ov = ObjectiveVariables( metadata.ObjectiveVariablesPath );
