@@ -220,7 +220,6 @@ classdef ImagePlotController < handle
     
     properties ( Access = private, Constant )
         
-        DEGREE = char( 176 );
         XLIM = [ -180 180 ];
         YLIM = [ -90 90 ];
         MAJOR_SPACING = 45;
@@ -252,7 +251,7 @@ classdef ImagePlotController < handle
             %axes.Interactions = [];
             axes.HitTest = 'off';
             
-            %axes.XTickFormat = [ '%.0f' ImagePlotController.DEGREE ];
+            %axes.XTickFormat = [ '%.0f' degree_symbol() ];
             % TODO when available
             axes.XAxis.MinorTickValues = axes.XLim( 1 ) : ...
                 ImagePlotController.MINOR_SPACING : ...
