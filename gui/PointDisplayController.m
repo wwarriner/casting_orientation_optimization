@@ -86,8 +86,8 @@ classdef PointDisplayController < handle
         
         function data = get_selected_point_data( obj )
             
-            data.angles = obj.model.get_selected_point_angles_in_degrees( obj );
-            data.value = obj.model.get_selected_point_value( obj );
+            data.angles = obj.model.get_selected_point_angles_in_degrees();
+            data.value = obj.model.get_value();
             
         end
         
@@ -113,7 +113,7 @@ classdef PointDisplayController < handle
         
         function set_selected_point_text( obj, text )
             
-            obj.selected_point_text_area.Text = text;
+            obj.selected_point_text_area.Value = text;
             
         end
         

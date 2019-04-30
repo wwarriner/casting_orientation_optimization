@@ -57,6 +57,9 @@ classdef FeasibilityThresholdSelectionController < handle
     
     properties ( Access = private )
         
+        check_boxes
+        sliders
+        spinners
         model
         
     end

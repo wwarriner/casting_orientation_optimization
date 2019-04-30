@@ -1,13 +1,5 @@
 classdef DataSelectionController < handle
     
-    properties ( Access = public, Constant )
-        
-        single = 'single';
-        feasibility = 'feasibility';
-        
-    end
-    
-    
     methods ( Access = public )
         
         function obj = DataSelectionController( ...
@@ -27,13 +19,12 @@ classdef DataSelectionController < handle
         
         function update_view_selection( obj )
             
-            switch obj.get_mode_tag()
-                case obj.single
-                    obj.switch_to_single_view();
-                case obj.feasibility
-                    obj.switch_to_feasibility_view();
-                otherwise
-                    assert( false );
+            view = obj.get_view_tag();
+            obj.model.set_view( view );
+            if strcmpi( view, obj.model.single_view )
+                obj.enable_single_widgets();
+            else
+                obj.disable_single_widgets();
             end
             
         end
@@ -69,23 +60,6 @@ classdef DataSelectionController < handle
     
     methods ( Access = private )
         
-        
-        function switch_to_single_view( obj )
-            
-            obj.enable_single_widgets();
-            obj.model.switch_to_single_view();
-            
-        end
-        
-        
-        function switch_to_feasibility_view( obj )
-            
-            obj.disable_single_widgets();
-            obj.model.switch_to_feasibility_view();
-            
-        end
-        
-        
         function disable_single_widgets( obj )
             
             obj.objective_drop_down.Enable = false;
@@ -102,7 +76,7 @@ classdef DataSelectionController < handle
         end
         
         
-        function tag = get_mode_tag( obj )
+        function tag = get_view_tag( obj )
             
             tag = obj.button_group.SelectedObject.Tag;
             

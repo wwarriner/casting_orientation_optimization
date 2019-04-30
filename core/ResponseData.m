@@ -93,16 +93,23 @@ classdef ResponseData < handle
         end
         
         
-        function values = get_pareto_front_values( obj )
+        function count = get_pareto_front_count( obj )
             
-            values = obj.pareto_front_values;
+            count = size( obj.pareto_front, 1 );
             
         end
         
         
-        function quantiles = get_pareto_front_quantiles( obj )
+        function values = get_pareto_front_values( obj, objective )
             
-            quantiles = obj.pareto_front_quantiles;
+            values = obj.pareto_front_values( objective );
+            
+        end
+        
+        
+        function quantiles = get_pareto_front_quantiles( obj, objective )
+            
+            quantiles = obj.pareto_front_quantiles( objective );
             
         end
         
@@ -215,7 +222,7 @@ classdef ResponseData < handle
     end
     
     
-    properties ( Access = private )
+    properties ( Access = public )
         
         name
         titles
