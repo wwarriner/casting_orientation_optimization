@@ -17,6 +17,22 @@ classdef DataSelectionController < handle
         end
         
         
+        function set_drop_down_items( obj )
+            
+            obj.objective_drop_down.Items = obj.model.get_objectives();
+            
+        end
+        
+        
+        function update_all( obj )
+            
+            obj.update_view_selection();
+            obj.update_objective_selection();
+            obj.update_threshold_check_box();
+            
+        end
+        
+        
         function update_view_selection( obj )
             
             view = obj.get_view_tag();

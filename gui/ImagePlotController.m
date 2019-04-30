@@ -16,6 +16,17 @@ classdef ImagePlotController < handle
         end
         
         
+        function update_all( obj )
+            
+            obj.update_values();
+            obj.update_threshold_values();
+            obj.update_pareto_front();
+            obj.update_global_minimum();
+            obj.update_clicked();
+            
+        end
+        
+        
         function update_values( obj )
             
             if isempty( obj.image_handle )
@@ -42,9 +53,15 @@ classdef ImagePlotController < handle
             
             values = obj.model.get_current_values();
             obj.image_handle.CData = obj.model.get_current_values();
+            min_val = min( values, [], 'all' );
+            max_val = max( values, [], 'all' );
+            if min_val == max_val
+                min_val = min_val - 0.5;
+                max_val = max_val + 0.5;
+            end
             obj.colorbar_handle.Ticks = linspace( ...
-                min( values, [], 'all' ), ...
-                max( values, [], 'all' ), ...
+                min_val, ...
+                max_val, ...
                 11 ...
                 );
             
@@ -174,7 +191,7 @@ classdef ImagePlotController < handle
         
         
         function update_clicked( obj, point )
-
+            
             % color from http://jfly.iam.u-tokyo.ac.jp/color/#redundant2
             if isempty( obj.selected_point_handle )
                 sph = plot( ...
@@ -191,6 +208,9 @@ classdef ImagePlotController < handle
             end
             
             %point = obj.get_axes_point();
+            if nargin < 2
+                point = obj.model.get_selected_point_angles_in_degrees();
+            end
             obj.model.set_selected_angles( point );
             obj.selected_point_handle.XData = point( 1 );
             obj.selected_point_handle.YData = point( 2 );

@@ -11,39 +11,55 @@ classdef FeasibilityThresholdSelectionController < handle
                 )
             
             % disable base
-            check_box_base.Enable = 'off';
-            check_box_base.Visible = 'off';
-            slider_base.Enable = 'off';
-            slider_base.Visible = 'off';
-            spinner_base.Enable = 'off';
-            spinner_base.Visible = 'off';
+            obj.widget_parent = feasibility_threshold_selection_panel;
+            obj.check_box_base = check_box_base;
+            obj.slider_base = slider_base;
+            obj.spinner_base = spinner_base;
+            obj.model = orientation_data_model;
+            
+            % disable base
+            obj.check_box_base.Enable = 'off';
+            obj.check_box_base.Visible = 'off';
+            obj.slider_base.Enable = 'off';
+            obj.slider_base.Visible = 'off';
+            obj.spinner_base.Enable = 'off';
+            obj.spinner_base.Visible = 'off';
+            
+        end
+        
+        
+        function set_widgets( obj )
+            
+            % destroy old widgets
+            obj.destroy_old_widgets( obj.check_boxes );
+            obj.destroy_old_widgets( obj.sliders );
+            obj.destroy_old_widgets( obj.spinners );
             
             % construct clones
             HEIGHT_OFFSET = 30;
-            count = orientation_data_model.get_objective_count();
-            check_boxes = cell( count, 1 );
-            sliders = cell( count, 1 );
-            spinners = cell( count, 1 );
+            count = obj.model.get_objective_count();
+            cbs = cell( count, 1 );
+            sls = cell( count, 1 );
+            sps = cell( count, 1 );
             for i = 1 : count
                 
-                parent = feasibility_threshold_selection_panel;
                 offset = ( i - 1 ) * HEIGHT_OFFSET;
-                objective = orientation_data_model.get_objective_from_index( i );
-                check_boxes{ i } = obj.clone_check_box( ...
-                    check_box_base, ...
-                    parent, ...
+                objective = obj.model.get_objective_from_index( i );
+                cbs{ i } = obj.clone_check_box( ...
+                    obj.check_box_base, ...
+                    obj.widget_parent, ...
                     offset, ...
                     objective ...
                     );
-                sliders{ i } = obj.clone_slider( ...
-                    slider_base, ...
-                    parent, ...
+                sls{ i } = obj.clone_slider( ...
+                    obj.slider_base, ...
+                    obj.widget_parent, ...
                     offset, ...
                     objective ...
                     );
-                spinners{ i } = obj.clone_spinner( ...
-                    spinner_base, ...
-                    parent, ...
+                sps{ i } = obj.clone_spinner( ...
+                    obj.spinner_base, ...
+                    obj.widget_parent, ...
                     offset, ...
                     objective ...
                     );
@@ -51,11 +67,10 @@ classdef FeasibilityThresholdSelectionController < handle
             end
             
             % set up object
-            objectives = orientation_data_model.get_objectives();
-            obj.check_boxes = containers.Map( objectives, check_boxes );
-            obj.sliders = containers.Map( objectives, sliders );
-            obj.spinners = containers.Map( objectives, spinners );
-            obj.model = orientation_data_model;
+            objectives = obj.model.get_objectives();
+            obj.check_boxes = containers.Map( objectives, cbs );
+            obj.sliders = containers.Map( objectives, sls );
+            obj.spinners = containers.Map( objectives, sps );
             
         end
         
@@ -108,6 +123,11 @@ classdef FeasibilityThresholdSelectionController < handle
     
     
     properties ( Access = private )
+        
+        widget_parent
+        check_box_base
+        slider_base
+        spinner_base
         
         check_boxes
         sliders
@@ -181,6 +201,21 @@ classdef FeasibilityThresholdSelectionController < handle
     
     
     methods ( Access = private, Static )
+        
+        function destroy_old_widgets( widgets )
+            
+            if isempty( widgets )
+                return;
+            end
+            values = widgets.values();
+            for i = 1 : widgets.Count()
+                
+                delete( values{ i } );
+                
+            end
+            
+        end
+        
         
         function update_widget_interactivity( ...
                 active, ...

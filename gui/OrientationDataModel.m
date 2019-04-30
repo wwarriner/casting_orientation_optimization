@@ -3,34 +3,80 @@ classdef OrientationDataModel < handle
     % constructor
     methods ( Access = public )
         
-        function obj = OrientationDataModel( full_path )
+        function obj = OrientationDataModel()
             
-            % todo automate/extract this
-            results = load( full_path );
-            [ path, name, ~ ] = fileparts( full_path );
-            data = results.(name);
+            obj.resolution = 300;
+            obj.selected_angles = [ 0 0 ];
             
-            data.Properties.UserData.Name = name;
-            data.Properties.UserData.ObjectiveVariablesPath = ...
-                which( data.Properties.UserData.ObjectiveVariablesPath );
+        end
+        
+    end
+    
+    
+    % setup
+    methods ( Access = public )
+        
+        function set_resolution( obj, resolution )
             
-            figure_resolution_px = 600;
-            data_extractor = DataExtractor( ...
-                data, ...
-                data.Properties.UserData, ...
-                ceil( figure_resolution_px / 2 ) ...
-                );
-            obj.response_data = ResponseData( data_extractor );
-            objectives = obj.response_data.get_tags();
-            obj.active_objectives = containers.Map( ...
+            assert( numel( resolution ) == 2 );
+            obj.resolution = resolution;
+            
+        end
+        
+    end
+    
+    
+    % file operations
+    methods ( Access = public )
+        
+        function ready = is_ready( obj )
+            
+            ready = ~isempty( obj.response_data );
+            
+        end
+        
+        
+        function load( obj, root_path )
+            
+            % dialog
+            start_path = fullfile( root_path, 'sample' );
+            EXT = '.mat';
+            filter = fullfile( start_path, [ '*' EXT ] );
+            [ file, path ] = uigetfile( filter );
+            if file == 0
+                return;
+            end
+            data_file_path = fullfile( path, file );
+            
+            % load response data
+            [ path, name, ~ ] = fileparts( data_file_path );
+            results = load( data_file_path );
+            raw_data = results.Data;
+            data_extractor = DataExtractor( raw_data, obj.resolution );
+            new_response_data = ResponseData( data_extractor );
+            
+            % setup active objectives
+            objectives = new_response_data.get_tags();
+            new_active_objectives = containers.Map( ...
                 objectives, ...
-                true( obj.response_data.get_count(), 1 ) ...
+                true( new_response_data.get_count(), 1 ) ...
                 );
-            initial_values = cell( obj.response_data.get_count(), 1 );
-            for i = 1 : obj.response_data.get_count()
+            for i = 1 : obj.get_objective_count()
+                
+                objective = obj.get_objective_from_index( i );
+                if new_active_objectives.isKey( objective )
+                    new_active_objectives( objective ) = ...
+                        obj.active_objectives( objective );
+                end
+                
+            end
+            
+            % setup value thresholds
+            initial_values = cell( new_response_data.get_count(), 1 );
+            for i = 1 : new_response_data.get_count()
                 
                 objective = objectives{ i };
-                range = obj.response_data.get_objective_value_range( objective );
+                range = new_response_data.get_objective_value_range( objective );
                 initial_values{ i } = ConstrainedNumericValue( ...
                     range.min, ...
                     range.max, ...
@@ -38,20 +84,60 @@ classdef OrientationDataModel < handle
                     );
                 
             end
-            obj.value_thresholds = containers.Map( ...
-                obj.response_data.get_tags(), ...
+            new_value_thresholds = containers.Map( ...
+                new_response_data.get_tags(), ...
                 initial_values ...
                 );
-            initial_values = cell( obj.response_data.get_count(), 1 );
-            for i = 1 : obj.response_data.get_count()
+            for i = 1 : obj.get_objective_count()
+                
+                objective = obj.get_objective_from_index( i );
+                if new_value_thresholds.isKey( objective )
+                    value = obj.value_thresholds( objective );
+                    value = value.get_value();
+                    limits = obj.get_data_limits( objective );
+                    fraction = ( value - limits( 1 ) ) ./ ( limits( 2 ) - limits( 1 ) );
+                    range = new_response_data.get_objective_value_range( objective );
+                    new_value = new_value_thresholds( objective );
+                    new_value.update( fraction .* ( range.max - range.min ) + range.min );
+                end
+                
+            end
+            
+            % setup quantile thresholds
+            initial_values = cell( new_response_data.get_count(), 1 );
+            for i = 1 : new_response_data.get_count()
                 
                 initial_values{ i } = ConstrainedNumericValue( 0, 1, 0.5 );
                 
             end
-            obj.quantile_thresholds = containers.Map( ...
-                obj.response_data.get_tags(), ...
+            new_quantile_thresholds = containers.Map( ...
+                new_response_data.get_tags(), ...
                 initial_values ...
                 );
+            for i = 1 : obj.get_objective_count()
+                
+                objective = obj.get_objective_from_index( i );
+                if new_quantile_thresholds.isKey( objective )
+                    new_quantile_thresholds( objective ) = ...
+                        obj.quantile_thresholds( objective );
+                end
+                
+            end
+            
+            % setup
+            obj.active_objectives = new_active_objectives;
+            obj.value_thresholds = new_value_thresholds;
+            obj.quantile_thresholds = new_quantile_thresholds;
+            obj.response_data = new_response_data;
+            
+            % load visualization generator
+            component_file_name = [ name '_' Component.NAME '.mat' ];
+            component_file_path = fullfile( path, component_file_name );
+            c = Component.load_obj( component_file_path );
+            feeders_file_name = [ name '_' Feeders.NAME '.mat' ];
+            feeders_file_path = fullfile( path, feeders_file_name );
+            f = Feeders.load_obj( feeders_file_path );
+            obj.visualization_generator = VisualizationGenerator( c, f );
             
         end
         
@@ -91,7 +177,7 @@ classdef OrientationDataModel < handle
         
         function set_view( obj, view )
             
-            obj.view = view;
+            obj.view_setting = view;
             
         end
         
@@ -176,6 +262,40 @@ classdef OrientationDataModel < handle
     % getters
     methods ( Access = public )
         
+        function visualize( obj )
+            
+            % TODO update this to use uifigure/uiaxes when rotation tools avail
+            fh = figure();
+            fh.MenuBar = 'none';
+            fh.ToolBar = 'none';
+            fh.DockControls = 'off';
+            fh.Color = 'w';
+            fh.Resize = 'off';
+            deg_angles = obj.get_selected_point_angles_in_degrees();
+            fh.Name = sprintf( ...
+                'Visualization of %s with @X: %.2f and @Y: %.2f', ...
+                obj.response_data.get_name(), ...
+                deg_angles( 1 ), ...
+                deg_angles( 2 ) ...
+                );
+            fh.NumberTitle = 'off';
+            cameratoolbar( fh, 'show' );
+            
+            axh = axes( fh );
+            axh.Color = 'none';
+            hold( axh, 'on' );
+            
+            view( axh, 3 );
+            light( axh, 'Position', [ 0 0 -1 ] );
+            light( axh, 'Position', [ 0 0 1 ] );
+
+            axis( axh, 'equal', 'vis3d', 'off' );
+            
+            obj.visualization_generator.draw( axh, obj.get_selected_point_angles_in_radians() );
+            
+        end
+        
+        
         function objectives = get_objectives( obj )
             
             objectives = obj.response_data.get_tags();
@@ -185,7 +305,7 @@ classdef OrientationDataModel < handle
         
         function relevant = is_global_minimum_relevant( obj )
             
-            switch obj.view
+            switch obj.view_setting
                 case obj.single_view
                     relevant = true;
                 case obj.feasibility_view
@@ -273,7 +393,7 @@ classdef OrientationDataModel < handle
         
         function is = is_global_minimum_shown( obj )
             
-            if strcmpi( obj.view, obj.single_view )
+            if strcmpi( obj.view_setting, obj.single_view )
                 is = obj.show_minimum;
             else
                 is = false;
@@ -291,7 +411,7 @@ classdef OrientationDataModel < handle
         
         function is = is_single_threshold_shown( obj )
             
-            if strcmpi( obj.view, obj.single_view )
+            if strcmpi( obj.view_setting, obj.single_view )
                 is = obj.show_single_threshold;
             else
                 is = false;
@@ -302,7 +422,7 @@ classdef OrientationDataModel < handle
         
         function enabled = is_enabled( obj, objective )
             
-            switch obj.view
+            switch obj.view_setting
                 case obj.single_view
                     enabled = strcmpi( obj.selected_objective, objective );
                 case obj.feasibility_view
@@ -316,7 +436,7 @@ classdef OrientationDataModel < handle
         
         function active = is_active( obj, objective )
             
-            switch obj.view
+            switch obj.view_setting
                 case obj.single_view
                     active = strcmpi( obj.selected_objective, objective );
                 case obj.feasibility_view
@@ -365,6 +485,11 @@ classdef OrientationDataModel < handle
         
         function count = get_objective_count( obj )
             
+            if ~obj.is_ready()
+                count = 0;
+                return;
+            end
+            
             count = double( obj.response_data.get_count() );
             
         end
@@ -373,6 +498,13 @@ classdef OrientationDataModel < handle
         function angles = get_selected_point_angles_in_degrees( obj )
             
             angles = obj.selected_angles();
+            
+        end
+        
+        
+        function angles = get_selected_point_angles_in_radians( obj )
+            
+            angles = deg2rad( obj.selected_angles() );
             
         end
         
@@ -407,10 +539,12 @@ classdef OrientationDataModel < handle
     
     properties ( Access = private )
         
+        resolution
         response_data
+        visualization_generator
         
         mode
-        view
+        view_setting
         selected_objective
         
         show_pareto
@@ -429,7 +563,7 @@ classdef OrientationDataModel < handle
         
         function values = select_values( obj )
             
-            switch obj.view
+            switch obj.view_setting
                 case obj.single_view
                     values = obj.select_single_values( obj.selected_objective );
                 case obj.feasibility_view
@@ -516,7 +650,7 @@ classdef OrientationDataModel < handle
         
         function below = select_pareto_front_below( obj )
             
-            switch obj.view
+            switch obj.view_setting
                 case obj.single_view
                     below = obj.is_pareto_front_below_single_threshold( obj.selected_objective );
                 case obj.feasibility_view

@@ -17,6 +17,15 @@ classdef PointDisplayController < handle
         end
         
         
+        function update_all( obj )
+            
+            obj.update_pareto_front();
+            obj.update_global_minimum();
+            obj.update_selected_point();
+            
+        end
+        
+        
         function update_pareto_front( obj )
             
             do_show = obj.is_pareto_front_selected();
@@ -50,7 +59,7 @@ classdef PointDisplayController < handle
         
         function visualize_selected_point( obj )
             
-            % TODO: visualization code
+            obj.model.visualize();
             
         end
         
