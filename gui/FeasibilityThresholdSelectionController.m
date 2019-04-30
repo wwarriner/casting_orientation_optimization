@@ -155,7 +155,6 @@ classdef FeasibilityThresholdSelectionController < handle
             a = obj.model.is_active( objective );
             e = obj.model.is_enabled( objective );
             obj.update_widget_interactivity( a, e, cb, sl, sp );
-            drawnow();
             
         end
         

@@ -1,34 +1,6 @@
 classdef OrientationDataModel < handle
     
-    % mode
-    properties ( Access = public )
-        
-        values_mode = 'values';
-        quantiles_mode = 'quantiles';
-        
-    end
-    
-    
-    methods ( Access = public )
-        
-        function set_mode( obj, mode )
-            
-            obj.mode = mode;
-            
-        end
-        
-    end
-    
-    
-    % view
-    properties ( Access = public )
-        
-        single_view = 'single';
-        feasibility_view = 'feasibility';
-        
-    end
-    
-    
+    % constructor
     methods ( Access = public )
         
         function obj = OrientationDataModel( full_path )
@@ -83,6 +55,39 @@ classdef OrientationDataModel < handle
             
         end
         
+    end
+    
+    
+    % mode
+    properties ( Access = public )
+        
+        values_mode = 'values';
+        quantiles_mode = 'quantiles';
+        
+    end
+    
+    
+    methods ( Access = public )
+        
+        function set_mode( obj, mode )
+            
+            obj.mode = mode;
+            
+        end
+        
+    end
+    
+    
+    % view
+    properties ( Access = public )
+        
+        single_view = 'single';
+        feasibility_view = 'feasibility';
+        
+    end
+    
+    
+    methods ( Access = public )
         
         function set_view( obj, view )
             
@@ -174,6 +179,20 @@ classdef OrientationDataModel < handle
         function objectives = get_objectives( obj )
             
             objectives = obj.response_data.get_tags();
+            
+        end
+        
+        
+        function relevant = is_global_minimum_relevant( obj )
+            
+            switch obj.view
+                case obj.single_view
+                    relevant = true;
+                case obj.feasibility_view
+                    relevant = false;
+                otherwise
+                    assert( false )
+            end
             
         end
         

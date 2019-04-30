@@ -27,8 +27,14 @@ classdef PointDisplayController < handle
         
         function update_global_minimum( obj )
             
-            do_show = obj.is_global_minimum_selected();
-            obj.model.show_global_minimum( do_show );
+            if ~obj.model.is_global_minimum_relevant()
+                obj.global_minimum_check_box.Enable = false;
+                obj.model.show_global_minimum( false );
+            else
+                obj.global_minimum_check_box.Enable = true;
+                do_show = obj.is_global_minimum_selected();
+                obj.model.show_global_minimum( do_show );
+            end
             
         end
         
