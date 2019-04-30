@@ -158,6 +158,13 @@ classdef OrientationDataModel < handle
             
         end
         
+        
+        function set_active_state( obj, objective, is_active )
+            
+            obj.active_objectives( objective ) = is_active;
+            
+        end
+        
     end
     
     
@@ -217,6 +224,34 @@ classdef OrientationDataModel < handle
         end
         
         
+        function limits = get_data_limits( obj, objective )
+
+            switch obj.mode
+                case obj.values_mode
+                    range = obj.response_data.get_objective_value_range( objective );
+                    limits = [ range.min range.max ];
+                case obj.quantiles_mode
+                    limits = [ 0 1 ];
+                otherwise
+                    assert( false )
+            end
+            
+        end
+        
+        
+        function limits = get_all_data_limits( obj )
+            
+            limits = nan( obj.get_objective_count(), 2 );
+            for i = 1 : obj.get_objective_count()
+                
+                limits( i, : ) = obj.get_data_limits( obj.get_objective_from_index( i ) );
+                
+            end
+            assert( ~any( isnan( limits ), 'all' ) );
+            
+        end
+        
+        
         function is = is_global_minimum_shown( obj )
             
             if strcmpi( obj.view, obj.single_view )
@@ -246,9 +281,72 @@ classdef OrientationDataModel < handle
         end
         
         
+        function enabled = get_enabled_objectives( obj )
+            
+            switch obj.view
+                case obj.single_view
+                    enabled = containers.Map( ...
+                        obj.get_objectives(), ...
+                        false( obj.get_objective_count(), 1 ) ...
+                        );
+                    enabled( obj.selected_objective ) = true;
+                case obj.feasibility_view
+                    enabled = containers.Map( ...
+                        obj.get_objectives(), ...
+                        true( obj.get_objective_count(), 1 ) ...
+                        );
+                otherwise
+                    assert( false );
+            end
+            
+        end
+        
+        
+        function active = get_active_objectives( obj )
+            
+            switch obj.view
+                case obj.single_view
+                    active = containers.Map( ...
+                        obj.get_objectives(), ...
+                        false( obj.get_objective_count(), 1 ) ...
+                        );
+                    active( obj.selected_objective ) = true;
+                case obj.feasibility_view
+                    active = containers.Map( ...
+                        obj.active_objectives.keys(), ...
+                        obj.active_objectives.values() ...
+                        );
+                otherwise
+                    assert( false );
+            end
+            
+        end
+        
+        
         function values = get_current_values( obj )
             
             values = obj.select_values();
+            
+        end
+        
+        
+        function threshold = get_threshold( obj, objective )
+            
+            threshold = obj.select_threshold( objective );
+            threshold = threshold.get_value();
+            
+        end
+        
+        
+        function thresholds = get_all_thresholds( obj )
+            
+            thresholds = nan( obj.get_objective_count(), 1 );
+            for i = 1 : obj.get_objective_count()
+                
+                thresholds( i ) = obj.get_threshold( obj.get_objective_from_index( i ) );
+                
+            end
+            assert( ~any( isnan( thresholds ), 'all' ) );
             
         end
         
@@ -262,7 +360,7 @@ classdef OrientationDataModel < handle
         
         function count = get_objective_count( obj )
             
-            count = obj.response_data.get_count();
+            count = double( obj.response_data.get_count() );
             
         end
         
@@ -379,8 +477,8 @@ classdef OrientationDataModel < handle
         
         function values = threshold_values( obj, objective, values )
             
-            threshold = obj.select_threshold( objective );
-            values = values <= threshold.get_value();
+            threshold = obj.get_threshold( objective );
+            values = values <= threshold;
             
         end
         

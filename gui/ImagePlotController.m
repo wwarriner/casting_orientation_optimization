@@ -26,7 +26,12 @@ classdef ImagePlotController < handle
                 ih.HitTest = 'off';
                 obj.image_handle = ih;
                 
-                obj.axes.Colormap = flipud( obj.axes.Colormap );
+                grayscale_color_map = interp1( ...
+                    [ 0; 1 ], ...
+                    repmat( [ 0.3; 0.9 ], [ 1 3 ] ), ...
+                    linspace( 0, 1, 256 ) ...
+                    );
+                obj.axes.Colormap = flipud( grayscale_color_map );
                 cbh = colorbar( obj.axes );
                 cbh.Location = 'eastoutside';
                 obj.colorbar_handle = cbh;
@@ -82,7 +87,7 @@ classdef ImagePlotController < handle
                     );
                 pfah.LineStyle = 'none';
                 pfah.Marker = 'o';
-                pfah.MarkerSize = 3;
+                pfah.MarkerSize = 5;
                 pfah.MarkerEdgeColor = 'k';
                 pfah.MarkerFaceColor = [ 0.0 0.6 0.5 ];
                 pfah.HitTest = 'off';
@@ -96,7 +101,7 @@ classdef ImagePlotController < handle
                     );
                 pfbh.LineStyle = 'none';
                 pfbh.Marker = 'o';
-                pfbh.MarkerSize = 3;
+                pfbh.MarkerSize = 5;
                 pfbh.MarkerEdgeColor = 'k';
                 pfbh.MarkerFaceColor = [ 0.9 0.6 0.0 ];
                 pfbh.HitTest = 'off';
@@ -225,35 +230,14 @@ classdef ImagePlotController < handle
             %axes.Interactions = [];
             axes.HitTest = 'off';
             
-            axes.XLim = ImagePlotController.XLIM;
-            axes.XTick = axes.XLim( 1 ) : ...
-                ImagePlotController.MAJOR_SPACING : ...
-                axes.XLim( 2 );
-            axes.XMinorTick = 'on';
             axes.XAxis.MinorTickValues = axes.XLim( 1 ) : ...
                 ImagePlotController.MINOR_SPACING : ...
                 axes.XLim( 2 );
-            axes.XAxisLocation = 'origin';
-            axes.XGrid = 'on';
-            axes.XMinorGrid = 'on';
             
-            axes.YLim = ImagePlotController.YLIM;
-            axes.YTick = axes.YLim( 1 ) : ...
-                ImagePlotController.MAJOR_SPACING : ...
-                axes.YLim( 2 );
-            axes.YMinorTick = 'on';
             axes.YAxis.MinorTickValues = axes.YLim( 1 ) : ...
                 ImagePlotController.MINOR_SPACING : ...
                 axes.YLim( 2 );
-            axes.YAxisLocation = 'origin';
-            axes.YGrid = 'on';
-            axes.YMinorGrid = 'on';
-            
-            axes.Layer = 'top';
-            axes.GridLineStyle = '-';
-            axes.MinorGridLineStyle = ':';
-            axes.GridColor = 'k';
-            
+                        
             hold( axes, 'on' );
             
         end
