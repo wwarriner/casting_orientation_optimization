@@ -36,7 +36,11 @@ classdef OrientationDataModel < handle
         end
         
         
-        function load( obj, root_path )
+        function canceled = load( obj, root_path )
+            
+            %% TODO some way of telling the user what model is loaded
+            
+            canceled = false;
             
             % dialog
             start_path = fullfile( root_path, 'sample' );
@@ -44,6 +48,7 @@ classdef OrientationDataModel < handle
             filter = fullfile( start_path, [ '*' EXT ] );
             [ file, path ] = uigetfile( filter );
             if file == 0
+                canceled = true;
                 return;
             end
             data_file_path = fullfile( path, file );
