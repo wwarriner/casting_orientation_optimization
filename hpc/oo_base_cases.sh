@@ -15,8 +15,7 @@ REPO_DIR=$ROOT_DIR'/repos'
 OUTPUT_DIR=$ROOT_DIR'/oo_component_data'
 CGT_DIR=$ROOT_DIR'/repos/casting_geometric_toolsuite'
 OPTION_DIR=$CGT_DIR'/examples/hpc_batch_demo/res/hpc_batch_demo_options.json'
-SOLVER_DIR=$ROOT_DIR'/repos/solidification_fdm_solver'
-RUN_CMD='generate_base_case_data( '\'$OPTION_DIR\'', '\''$STL_PATH'\'', '\'$OUTPUT_DIR\'', '\'$SOLVER_DIR\'' );'
+RUN_CMD='generate_base_case_data( '\'$OPTION_DIR\'', '\''$STL_PATH'\'', '\'$OUTPUT_DIR\'' );'
 FULL_CMD=$( create_matlab_command -a -c $REPO_DIR -d $ROOT_DIR -f "$RUN_CMD" )
 printf "%s\n" "$FULL_CMD"
 

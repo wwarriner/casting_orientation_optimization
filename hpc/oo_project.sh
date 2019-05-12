@@ -12,9 +12,7 @@ OPTIONS_PATH=$OPT_DIR'/'$OPTIONS_NAME
 OBJECTIVE_NAME='objective_variables.json'
 OBJECTIVE_PATH=$OPT_DIR'/'$OBJECTIVE_NAME
 OUTPUT_PATH=$ROOT_DIR'/results'
-SOLVER_PATH=$REPO_DIR'/solidification_fdm_solver'
-TOOLSUITE_PATH=$REPO_DIR'/casting_geometric_toolsuite'
-RUN_CMD='generate_csvs_on_hpc( '\'$COMPONENT_PATH\'', '\'$FEEDERS_PATH\'', '\'$OPTIONS_PATH\'', '\'$OBJECTIVE_PATH\'', [$ANGLES], $SLURM_ARRAY_TASK_ID, $SLURM_JOB_ID, '\'$OUTPUT_PATH\'', '\'$SOLVER_PATH\'', '\'$TOOLSUITE_PATH\'' );'
+RUN_CMD='generate_csvs_on_hpc( '\'$COMPONENT_PATH\'', '\'$FEEDERS_PATH\'', '\'$OPTIONS_PATH\'', '\'$OBJECTIVE_PATH\'', [$ANGLES], $SLURM_ARRAY_TASK_ID, $SLURM_JOB_ID, '\'$OUTPUT_PATH\'' );'
 FULL_CMD=$( create_matlab_command -a -c $REPO_DIR -d $ROOT_DIR -f "$RUN_CMD" )
 
 CSV_NAME='sphere_angles.csv'
