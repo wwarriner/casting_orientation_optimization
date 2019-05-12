@@ -19,5 +19,6 @@
 "core_cost_per_volume":0.000000318,
 "tooling_stock_cost_per_volume":0.00000000000755,
 "tooling_processing_cost_per_volume_removed":0.00833,
-"order_quantity":100
+"order_quantity":100,
+"use_thermal_profile":true
 }

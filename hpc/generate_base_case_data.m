@@ -1,8 +1,20 @@
 function [ c_path, f_path ] = generate_base_case_data( ...
     option_path, ...
     stl_path, ...
-    output_folder ...
+    output_folder, ...
+    var_add_paths ...
     )
+
+if nargin >= 4
+    original_path = [];
+    for i = 1 : numel( var_add_paths )
+        oldpath = addpath( genpath( var_add_paths{ i } ) );
+        if i == 1
+            original_path = oldpath;
+        end
+    end
+    cleanup = onCleanup( @()path(original_path) );
+end
 
 options = Options( '', option_path, stl_path, output_folder );
 try
