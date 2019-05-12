@@ -157,7 +157,7 @@ classdef (Sealed) OrientationBaseCase < handle
         
         function titles = get_objective_variable_titles( obj )
             
-            titles = obj.objective_variables.get_titles();
+            titles = obj.objective_variables.get_tags();
             
         end
         
