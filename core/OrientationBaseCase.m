@@ -33,26 +33,28 @@ classdef (Sealed) OrientationBaseCase < handle
         
         function objectives = determine_objectives( obj, angles )
             
-            rotated_case = obj.get_rotated_case( angles );
+            obj.options.user_needs = obj.objective_variables.get_processes();
+            rotated_case = obj.generate_rotated_case( angles );
             
-            DIM = 3;
-            GRAVITY_DIRECTION = 'down';
+            try
+                pm = ProcessManager( obj.options, rotated_case );
+                pm.run();
+            catch e
+                fprintf( 1, '%s\n', getReport( e ) );
+            end
             
-            uc = Undercuts();
-            uc.legacy_run( rotated_case.get( Mesh.NAME ), DIM );
-            rotated_case.add( uc.NAME, uc );
-            pp = PartingPerimeter();
-            pp.legacy_run( rotated_case.get( Mesh.NAME ), DIM, true );
-            rotated_case.add( pp.NAME, pp );
-            wf = Waterfall();
-            wf.legacy_run( rotated_case.get( Mesh.NAME ), pp, GRAVITY_DIRECTION );
-            rotated_case.add( wf.NAME, wf );
-            
+            parting_dimension = obj.options.parting_dimensions;
+            gravity_direction = obj.options.gravity_directions;
             objective_count = obj.objective_variables.get_objective_count();
             objectives = nan( 1, objective_count );
             for i = 1 : objective_count
                 
-                objectives( i ) = obj.objective_variables.evaluate( i, @rotated_case.get, DIM, GRAVITY_DIRECTION );
+                objectives( i ) = obj.objective_variables.evaluate( ...
+                    i, ...
+                    @rotated_case.get, ...
+                    parting_dimension, ...
+                    gravity_direction ...
+                    );
                 
             end
             
@@ -115,29 +117,21 @@ classdef (Sealed) OrientationBaseCase < handle
     
     methods ( Access = private )
         
-        function rotated_case = get_rotated_case( obj, angles )
-            
-            rotated_case = obj.generate_rotated_case( angles );
-            
-        end
-        
-        
         function rotated_case = generate_rotated_case( obj, angles )
             
-            r = obj.create_rotator( angles );
-            rotated_case = Results();
-            rotated_case.add( Component.NAME, obj.component.rotate( r ) );
+            r = Rotator( angles, obj.component.centroid() );
+            rotated_case = Results( obj.options );
+            
+            component_pk = ProcessKey( Component.NAME );
+            rotated_case.add( component_pk, obj.component.rotate( r ) );
+            
             mr = Mesh( rotated_case, obj.options );
             mr.run();
-            rotated_case.add( Mesh.NAME, mr );
-            rotated_case.add( Feeders.NAME, obj.feeders.rotate( r, mr ) );
+            mesh_pk = ProcessKey( Mesh.NAME );
+            rotated_case.add( mesh_pk, mr );
             
-        end
-        
-        
-        function rotator = create_rotator( obj, angles )
-            
-            rotator = Rotator( angles, obj.component.centroid() );
+            feeders_pk = ProcessKey( Feeders.NAME );
+            rotated_case.add( feeders_pk, obj.feeders.rotate( r, mr ) );
             
         end
         
