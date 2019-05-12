@@ -3,7 +3,7 @@
 		"tag": "uc_count",
 		"title": "Undercut, Count",
 		"type": "ordinal",
-		"process": "Undercut",
+		"process": "Undercuts",
 		"property": "count",
 		"metric": "property",
 		"notes": "count of undercuts"
@@ -58,7 +58,7 @@
 		"title": "Feeder, Max of 1 - Validity",
 		"type": "continuous",
 		"process": "Feeders",
-		"property": "get_accessibility_ratios()",
+		"property": "get_accessibility_ratios",
 		"metric": "max( 1 - property )",
 		"notes": "worst case of accessibility over all feeders minimized"
 	},
@@ -67,7 +67,7 @@
 		"title": "Feeder, Intersection Volume",
 		"type": "continuous",
 		"process": "Feeders",
-		"property": "get_total_intersection_volume()",
+		"property": "get_total_intersection_volume",
 		"metric": "property",
 		"notes": "intersection between component and feeders minimized"
 	},
@@ -76,7 +76,7 @@
 		"title": "Feeder, Interface Area",
 		"type": "continuous",
 		"process": "Feeders",
-		"property": "get_total_interface_area()",
+		"property": "get_total_interface_area",
 		"metric": "property",
 		"notes": "interface area between component and feeders minimized"
 	},
@@ -103,8 +103,26 @@
 		"title": "Flask, Height",
 		"type": "continuous",
 		"process": "Feeders",
-		"property": "get_total_rigged_height( dimension )",
+		"property": "get_total_rigged_height",
 		"metric": "property",
 		"notes": "required flask height ideally minimized"
+	},
+	{
+		"tag": "core_count",
+		"title": "Core, Count",
+		"type": "ordinal",
+		"process": "CoreDirectional",
+		"property": "count",
+		"metric": "property",
+		"notes": "count of direction-specific cores"
+	},
+	{
+		"tag": "core_volume",
+		"title": "Core, Volume",
+		"type": "continuous",
+		"process": "CoreDirectional",
+		"property": "volume",
+		"metric": "property",
+		"notes": "volume of direction-specific cores"
 	}
 ]
