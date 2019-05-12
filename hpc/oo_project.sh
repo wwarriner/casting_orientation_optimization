@@ -2,17 +2,19 @@
 ROOT_DIR=$(dirname "$(realpath "$0")")
 PATH=$PATH:"$ROOT_DIR"
 
-REPO_DIR=$ROOT_DIR'/repos/casting_geometric_toolsuite'
-OPT_DEMO_DIR=$REPO_DIR'/examples/optimization_demo'
+REPO_DIR=$ROOT_DIR'/repos'
+OPT_DIR=$REPO_DIR'/casting_orientation_optimization'
 COMPONENT_NAME=$1
-COMPONENT_PATH=$ROOT_DIR'/oo_component_data/'$COMPONENT_NAME'_data_component.mat'
-FEEDERS_PATH=$ROOT_DIR'/oo_component_data/'$COMPONENT_NAME'_data_feeders.mat'
+COMPONENT_PATH=$ROOT_DIR'/oo_component_data/'$COMPONENT_NAME'_Component.mat'
+FEEDERS_PATH=$ROOT_DIR'/oo_component_data/'$COMPONENT_NAME'_Feeders.mat'
 OPTIONS_NAME='oo_options.json'
-OPTIONS_PATH=$OPT_DEMO_DIR'/'$OPTIONS_NAME
+OPTIONS_PATH=$OPT_DIR'/'$OPTIONS_NAME
 OBJECTIVE_NAME='objective_variables.json'
-OBJECTIVE_PATH=$OPT_DEMO_DIR'/'$OBJECTIVE_NAME
+OBJECTIVE_PATH=$OPT_DIR'/'$OBJECTIVE_NAME
 OUTPUT_PATH=$ROOT_DIR'/results'
-RUN_CMD='generate_csvs_on_hpc( '\'$COMPONENT_PATH\'', '\'$FEEDERS_PATH\'', '\'$OPTIONS_PATH\'', '\'$OBJECTIVE_PATH\'', [$ANGLES], $SLURM_ARRAY_TASK_ID, $SLURM_JOB_ID, '\'$OUTPUT_PATH\'' );'
+SOLVER_PATH=$REPO_DIR'/solidification_fdm_solver'
+TOOLSUITE_PATH=$REPO_DIR'/casting_geometric_toolsuite'
+RUN_CMD='generate_csvs_on_hpc( '\'$COMPONENT_PATH\'', '\'$FEEDERS_PATH\'', '\'$OPTIONS_PATH\'', '\'$OBJECTIVE_PATH\'', [$ANGLES], $SLURM_ARRAY_TASK_ID, $SLURM_JOB_ID, '\'$OUTPUT_PATH\'', '\'$SOLVER_PATH\'', '\'$TOOLSUITE_PATH\'' );'
 FULL_CMD=$( create_matlab_command -a -c $REPO_DIR -d $ROOT_DIR -f "$RUN_CMD" )
 
 CSV_NAME='sphere_angles.csv'
@@ -28,10 +30,10 @@ MAILTYPE=FAIL
 MAILADDRESS='wwarr@uab.edu'
 
 module load rc/matlab/R2018a
-JOB_ID=$( sbatch --array=0-1%$MAXTASKS --job-name=$NAME --output=output/output_%A_%a.txt --ntasks=$TASKS --mem-per-cpu=$MEMORY --time=$TIME --partition=$PARTITION --mail-type=$MAILTYPE --mail-user=$MAILADDRESS <<LIMITING_STRING
+JOB_ID=$( sbatch --array=0-0%$MAXTASKS --job-name=$NAME --output=output/output_%A_%a.txt --ntasks=$TASKS --mem-per-cpu=$MEMORY --time=$TIME --partition=$PARTITION --mail-type=$MAILTYPE --mail-user=$MAILADDRESS <<LIMITING_STRING
 #!/bin/bash
 ANGLES=\$( sed \$(( \$SLURM_ARRAY_TASK_ID+1 ))'q;d' $CSV_PATH )
-matlab -nodisplay -nodesktop -sd $ROOT_DIR -r $FULL_CMD
+matlab -nodisplay -nodesktop -sd $ROOT_DIR -r $RUN_CMD
 LIMITING_STRING
 )
 JOB_ID=${JOB_ID##* }
