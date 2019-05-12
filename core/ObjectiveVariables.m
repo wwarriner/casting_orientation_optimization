@@ -48,6 +48,13 @@ classdef (Sealed) ObjectiveVariables < handle
         end
         
         
+        function processes = get_processes( obj )
+            
+            processes = unique( obj.variables.process );
+            
+        end
+        
+        
         % retrieval function must take a process name and return the desired process object
         function value = evaluate( obj, index, retrieval_function, dimension, gravity_direction ) %#ok<INUSD>
             
