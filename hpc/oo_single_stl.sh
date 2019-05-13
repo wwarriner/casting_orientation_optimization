@@ -16,7 +16,7 @@ TIME=$(date +%s%N)
 OUTPUT_BASE_PATH=$ROOT_DIR'/oo_results/'$COMPONENT_NAME
 OUTPUT_PATH=$OUTPUT_BASE_PATH'_'$TIME
 mkdir -p $OUTPUT_PATH
-RUN_CMD='generate_csvs_on_hpc( '\'$COMPONENT_PATH\'', '\'$FEEDERS_PATH\'', '\'$OPTIONS_PATH\'', '\'$OBJECTIVE_PATH\'', [$ANGLES], $SLURM_ARRAY_TASK_ID, $SLURM_JOB_ID, '\'$OUTPUT_PATH\'' );'
+RUN_CMD='generate_csvs_on_hpc( '\'$COMPONENT_PATH\'', '\'$FEEDERS_PATH\'', '\'$OPTIONS_PATH\'', '\'$OBJECTIVE_PATH\'', [$ANGLES], $SLURM_ARRAY_TASK_ID, $SLURM_ARRAY_JOB_ID, '\'$OUTPUT_PATH\'' );'
 FULL_CMD=$( create_matlab_command -a -c $REPO_DIR -d $ROOT_DIR -f "$RUN_CMD" )
 
 CSV_NAME='sphere_angles.csv'

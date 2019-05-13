@@ -18,9 +18,9 @@ RUN_CMD='generate_base_case_data( '\'$OPTION_DIR\'', '\''$STL_PATH'\'', '\'$OUTP
 FULL_CMD=$( create_matlab_command -a -c $REPO_DIR -d $ROOT_DIR -f "$RUN_CMD" )
 printf "%s\n" "$FULL_CMD"
 
-NAME=ict_project
+NAME=oo_project
 ARRAYMAX=$(( array_max=$STL_PATH_COUNT-1 ))
-MAXTASKS=1
+MAXTASKS=256
 TASKS=1
 MEMORY='20GB'
 TIME=2:00:00
@@ -31,6 +31,8 @@ MAILADDRESS='wwarr@uab.edu'
 module load rc/matlab/R2018a
 sbatch --array=0-$ARRAYMAX%$MAXTASKS --job-name $NAME --output=output/output_%A_%a.txt --ntasks=$TASKS --mem-per-cpu=$MEMORY --time=$TIME --partition=$PARTITION --mail-type=$MAILTYPE --mail-user=$MAILADDRESS <<LIMITING_STRING
 #!/bin/bash
-STL_PATH=${STL_PATHS[$SLURM_ARRAY_TASK_ID]}
+PATHS=(${STL_PATHS[@]})
+STL_PATH=\${PATHS[\$SLURM_ARRAY_TASK_ID]}
+echo "\$STL_PATH"
 matlab -nodisplay -nodesktop -nojvm -sd $ROOT_DIR -r $FULL_CMD
 LIMITING_STRING
