@@ -51,18 +51,12 @@ classdef ImagePlotController < handle
                 obj.colorbar_handle = cbh;
             end
             
-            values = obj.model.get_current_values();
             obj.image_handle.CData = obj.model.get_current_values();
-            min_val = min( values, [], 'all' );
-            max_val = max( values, [], 'all' );
-            if min_val == max_val
-                min_val = min_val - 0.5;
-                max_val = max_val + 0.5;
-            end
-            caxis( obj.axes, [ min_val, max_val ] );
+            range = obj.model.get_color_axis_range();
+            caxis( obj.axes, range );
             obj.colorbar_handle.Ticks = linspace( ...
-                min_val, ...
-                max_val, ...
+                range( 1 ), ...
+                range( 2 ), ...
                 11 ...
                 );
             

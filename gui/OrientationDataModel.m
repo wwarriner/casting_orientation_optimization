@@ -460,6 +460,25 @@ classdef OrientationDataModel < handle
         end
         
         
+        function range = get_color_axis_range( obj )
+            
+            if strcmpi( obj.view_setting, obj.single_view ) && ...
+                    strcmpi( obj.mode, obj.values_mode )
+                values = obj.get_current_values();
+                range = [ ...
+                    min( values, [], 'all' )
+                    max( values, [], 'all' )
+                    ];
+                if diff( range ) < eps
+                    range = [ range( 1 ) - 0.5, range( 2 ) + 0.5 ];
+                end
+            else
+                range = [ 0 1 ];
+            end
+            
+        end
+        
+        
         function threshold = get_threshold( obj, objective )
             
             threshold = obj.select_threshold( objective );
