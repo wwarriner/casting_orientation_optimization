@@ -38,13 +38,13 @@ classdef OrientationDataModel < handle
         
         function canceled = load( obj, root_path )
             
-            %% TODO some way of telling the user what model is loaded
+            % TODO some way of telling the user what model is loaded
             
             canceled = false;
             
             % dialog
             start_path = fullfile( root_path, 'sample' );
-            EXT = '.mat';
+            EXT = '.ood';
             filter = fullfile( start_path, [ '*' EXT ] );
             [ file, path ] = uigetfile( filter );
             if file == 0
@@ -55,9 +55,10 @@ classdef OrientationDataModel < handle
             
             % load response data
             [ path, name, ~ ] = fileparts( data_file_path );
-            results = load( data_file_path );
-            raw_data = results.Data;
-            data_extractor = DataExtractor( raw_data, obj.resolution );
+            data = load( data_file_path, '-mat' );
+            results = data.results;
+            objective_variables = data.objective_variables;
+            data_extractor = DataExtractor( results, objective_variables, obj.resolution );
             new_response_data = ResponseData( data_extractor );
             
             % setup active objectives
@@ -136,10 +137,10 @@ classdef OrientationDataModel < handle
             obj.response_data = new_response_data;
             
             % load visualization generator
-            component_file_name = [ name '_' Component.NAME '.mat' ];
+            component_file_name = [ name '_' Component.NAME '.ooc' ];
             component_file_path = fullfile( path, component_file_name );
             c = Component.load_obj( component_file_path );
-            feeders_file_name = [ name '_' Feeders.NAME '.mat' ];
+            feeders_file_name = [ name '_' Feeders.NAME '.oof' ];
             feeders_file_path = fullfile( path, feeders_file_name );
             f = Feeders.load_obj( feeders_file_path );
             obj.visualization_generator = VisualizationGenerator( c, f );

@@ -2,12 +2,12 @@ classdef DataExtractor < handle
     
     methods ( Access = public )
         
-        function obj = DataExtractor( data_table, resolution )
+        function obj = DataExtractor( data_table, objective_variables, resolution )
             
             metadata = data_table.Properties.UserData;
             name = metadata.Name;
             
-            ov = ObjectiveVariables( metadata.ObjectiveVariablesPath );
+            ov = objective_variables;
             titles = ov.get_titles();
             tags = ov.get_tags();
             interp_methods = ov.get_interpolation_methods();

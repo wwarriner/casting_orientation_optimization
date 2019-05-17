@@ -1,15 +1,27 @@
-function results = organize_csv_data( results_dir, stl_name )
+function organize_csv_data( results_dir )
 %% get file names
 extension = '.csv';
-pattern = sprintf( '*%s*%s', stl_name, extension );
+pattern = sprintf( '*%s', extension );
 file_names = strip( string( ls( fullfile( results_dir, pattern ) ) ) );
 
+%% get stl name
+prefix = 'results';
+postfix = [ '\' extension ];
+pattern = sprintf( '%s_(.*?)_[0-9]+_[0-9]+%s', prefix, postfix );
+values = regexpi( file_names, pattern, 'tokens' );
+stl_name = values{ 1 }{ 1 };
+
 %% sort file names by number
-pattern = sprintf( '^.*?([0-9]*?)_([0-9]+?)%s', extension );
+c = contains( file_names, stl_name );
+file_names( ~c ) = [];
+
+pattern = sprintf( '%s_.*?_([0-9]+)_([0-9]+)%s', prefix, postfix );
 numbers = regexpi( file_names, pattern, 'tokens' );
 numbers = cellfun( @( x ) str2double( x{ : } ), numbers, 'uniformoutput', false );
 numbers = cell2mat( numbers );
-[ ~, indices ] = sortrows( numbers, 2, 'ascend' );
+job_id = numbers( 1 );
+task_ids = numbers( :, 2 );
+[ ~, indices ] = sortrows( task_ids, 'ascend' );
 file_names = file_names( indices );
 
 %% construct full paths
@@ -47,9 +59,9 @@ results.Properties.UserData.DecisionEndColumn = OrientationBaseCase.get_decision
 results.Properties.UserData.ObjectiveStartColumn = results.Properties.UserData.DecisionEndColumn + 1;
 
 %% append objective_variables.json path
-job_ids = sort( numbers( :, 1 ), 'ascend' );
-objectives_path = get_path( 'objective_variables.json', results_dir, job_ids );
-results.Properties.UserData.ObjectiveVariablesPath = objectives_path;
+objective_variables_name = sprintf( 'objective_variables_%i.json', job_id );
+objectives_path = fullfile( results_dir, objective_variables_name );
+objective_variables = ObjectiveVariables( objectives_path );
 
 %% mark pareto frontier
 pareto_indices = find_pareto_indices( results{ :, results.Properties.UserData.ObjectiveStartColumn : end } );
@@ -60,45 +72,25 @@ results = movevars( results, 'is_pareto_dominant', 'before', results.Properties.
 results.Properties.UserData.ParetoIndicesColumn = results.Properties.UserData.ObjectiveStartColumn;
 results.Properties.UserData.ObjectiveStartColumn = results.Properties.UserData.ObjectiveStartColumn + 1;
 
-end
+%% save
+DATA_EXT = '.ood';
+out_name = sprintf( '%s%s', stl_name, DATA_EXT );
+out_path = fullfile( results_dir, out_name );
+save( out_path, 'results', 'objective_variables' );
 
+COMPONENT_EXT = '.ooc';
+component_base_name = sprintf( '%s_%s', stl_name, Component.NAME );
+copyfile( ...
+    fullfile( results_dir, sprintf( '%s_%i%s', component_base_name, job_id, '.mat' ) ), ...
+    fullfile( results_dir, sprintf( '%s%s', component_base_name, COMPONENT_EXT ) ) ...
+    );
 
-function objectives_path = get_path( file_name_with_ext, results_dir, job_ids )
-
-[ ~, name, ext ] = fileparts( file_name_with_ext );
-if all( isnan( job_ids ) )
-    trial_objectives_path = fullfile( ...
-        results_dir, ...
-        [ name ext ] ...
-        );
-    if isfile( trial_objectives_path )
-        objectives_path = trial_objectives_path;
-    end
-else
-    for i = 1 : length( job_ids )
-        
-        name = sprintf( ...
-            '%s_%i%s', ...
-            name, ...
-            job_ids( i ), ...
-            ext ...
-            );
-        objectives_path = fullfile( results_dir, name );
-        if isfile( objectives_path )
-            break;
-        end
-        
-    end
-    objectives_path = [];
-end
-
-if isempty( objectives_path )
-    warning( ...
-        [ 'Unable to locate path in results dir\n' ...
-        '%s' ], ...
-        results_dir ...
-        );
-end
+FEEDER_EXT = '.oof';
+feeders_base_name = sprintf( '%s_%s', stl_name, Feeders.NAME );
+copyfile( ...
+    fullfile( results_dir, sprintf( '%s_%i%s', feeders_base_name, job_id, '.mat' ) ), ...
+    fullfile( results_dir, sprintf( '%s%s', feeders_base_name, FEEDER_EXT ) )...
+    );
 
 end
 
