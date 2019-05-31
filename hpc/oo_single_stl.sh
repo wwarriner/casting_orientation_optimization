@@ -31,9 +31,9 @@ PARTITION=express
 MAILTYPE=FAIL
 MAILADDRESS='wwarr@uab.edu'
 
-module load rc/matlab/R2018a
 JOB_ID=$( sbatch --array=0-$ARRAYMAX%$MAXTASKS --job-name=$NAME --output=output/output_%A_%a.txt --ntasks=$TASKS --mem-per-cpu=$MEMORY --time=$TIME --partition=$PARTITION --mail-type=$MAILTYPE --mail-user=$MAILADDRESS <<LIMITING_STRING
 #!/bin/bash
+module load rc/matlab/R2018a
 ANGLES=\$( sed \$(( \$SLURM_ARRAY_TASK_ID+1 ))'q;d' $CSV_PATH )
 matlab -nodisplay -nodesktop -sd $ROOT_DIR -r $FULL_CMD
 LIMITING_STRING
