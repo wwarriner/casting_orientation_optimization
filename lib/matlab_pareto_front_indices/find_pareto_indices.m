@@ -57,6 +57,6 @@ while ~isempty( candidate_objectives )
     
 end
 pareto_indices( any( isnan( pareto_indices ), 2 ) ) = [];
-assert( ~any( isnana( pareto_indices ) ) );
+assert( ~any( isnan( pareto_indices ) ) );
 
 end
