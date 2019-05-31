@@ -54,12 +54,9 @@ classdef OrientationDataModel < handle
             data_file_path = fullfile( path, file );
             
             % load response data
-            [ path, name, ~ ] = fileparts( data_file_path );
-            data = load( data_file_path, '-mat' );
-            results = data.results;
-            objective_variables = data.objective_variables;
-            data_extractor = DataExtractor( results, objective_variables, obj.resolution );
-            new_response_data = ResponseData( data_extractor );
+            loader = DataLoader();
+            loader.load( data_file_path, obj.resolution );
+            new_response_data = loader.get_response_data();
             
             % setup active objectives
             objectives = new_response_data.get_tags();
@@ -135,15 +132,7 @@ classdef OrientationDataModel < handle
             obj.value_thresholds = new_value_thresholds;
             obj.quantile_thresholds = new_quantile_thresholds;
             obj.response_data = new_response_data;
-            
-            % load visualization generator
-            component_file_name = [ name '_' Component.NAME '.ooc' ];
-            component_file_path = fullfile( path, component_file_name );
-            c = Component.load_obj( component_file_path );
-            feeders_file_name = [ name '_' Feeders.NAME '.oof' ];
-            feeders_file_path = fullfile( path, feeders_file_name );
-            f = Feeders.load_obj( feeders_file_path );
-            obj.visualization_generator = VisualizationGenerator( c, f );
+            obj.visualization_generator = loader.get_visualization_generator();
             
         end
         
