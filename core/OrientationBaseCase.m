@@ -11,12 +11,7 @@ classdef (Sealed) OrientationBaseCase < handle
             
             obj.component = Component.load_obj( component_path );
             obj.feeders = Feeders.load_obj( feeders_path );
-            obj.options = Options( ...
-                'option_defaults.json', ...
-                option_path, ...
-                '', ...
-                '' ...
-                );
+            obj.options = Options( option_path );
             obj.objective_variables = ...
                 ObjectiveVariables( objective_variables_path );
             
@@ -33,7 +28,7 @@ classdef (Sealed) OrientationBaseCase < handle
         
         function objectives = determine_objectives( obj, angles )
             
-            obj.options.user_needs = obj.objective_variables.get_processes();
+            obj.options.set( 'manager.user_needs', obj.objective_variables.get_processes() );
             rotated_case = obj.generate_rotated_case( angles );
             
             try
@@ -43,8 +38,8 @@ classdef (Sealed) OrientationBaseCase < handle
                 fprintf( 1, '%s\n', getReport( e ) );
             end
             
-            parting_dimension = obj.options.parting_dimensions;
-            gravity_direction = obj.options.gravity_directions;
+            parting_dimension = obj.options.get( 'manager.parting_dimensions' );
+            gravity_direction = obj.options.get( 'manager.gravity_directions' );
             objective_count = obj.objective_variables.get_objective_count();
             objectives = nan( 1, objective_count );
             for i = 1 : objective_count
