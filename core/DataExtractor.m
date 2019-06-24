@@ -2,21 +2,25 @@ classdef DataExtractor < handle
     
     methods ( Access = public )
         
-        function obj = DataExtractor( data_table, objective_variables, resolution )
+        function obj = DataExtractor( data_table, objective_variables, resolution, ignore_inds )
             
             metadata = data_table.Properties.UserData;
             name = metadata.Name;
             
             ov = objective_variables;
             titles = ov.get_titles();
+            titles( ignore_inds ) = []; % PAPER ONLY
             tags = ov.get_tags();
+            tags( ignore_inds ) = []; % PAPER ONLY
             interp_methods = ov.get_interpolation_methods();
+            interp_methods( ignore_inds ) = []; % PAPER ONLY
             
             start = metadata.ObjectiveStartColumn;
+            data_table( :, start + ignore_inds - 1 ) = []; % PAPER ONLY
             finish = size( data_table, 2 );
             count = finish - start + 1;
             
-            assert( ov.get_objective_count() == count );
+            %assert( ov.get_objective_count() == count ); % PAPER ONLY, UNCOMMENT
             assert( numel( titles ) == count );
             assert( numel( tags ) == count );
             
