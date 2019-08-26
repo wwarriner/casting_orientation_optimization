@@ -1,158 +1,96 @@
-classdef (Sealed) ObjectiveVariables < handle
+classdef ObjectiveVariables < handle
     
-    methods ( Access = public )
-        
-        function obj = ObjectiveVariables( varargin )
-            
-            if numel( varargin ) == 1 ...
-                    && ( ischar( varargin{ 1 } ) || isstring( varargin{ 1 } ) )
-                path = varargin{ 1 };
-                obj.variables = obj.read_objective_variables( path );
-            elseif numel( varargin ) == 2
-                obj.variables.title = varargin{ 1 };
-                obj.variables.display = obj.variables.title;
-                obj.variables.interpolation_method = varargin{ 2 };
-            else
-                assert( false );
+    properties ( SetAccess = private, Dependent )
+        count(1,1) double {mustBeReal,mustBeFinite,mustBePositive}
+        tags(:,1) string
+        titles(:,1) string
+        interpolation_methods(:,1) string
+        process_names(:,1) string
+    end
+    
+    methods
+        function obj = ObjectiveVariables( file, base_case )
+            if ischar( file )
+                file = string( file );
             end
+            assert( isstring( file ) );
+            assert( isscalar( file ) );
+            assert( isfile( file ) );
             
+            variables = obj.read_objective_variables( file );
             
+            obj.variables = variables;
+            obj.base_case = base_case;
         end
-        
-        
-        function count = get_objective_count( obj )
-            
-            count = size( obj.variables, 1 );
-            
-        end
-        
-        
-        function titles = get_tags( obj )
-            
-            titles = obj.variables.tag;
-            
-        end
-        
-        
-        function titles = get_titles( obj )
-            
-            titles = obj.variables.title;
-            
-        end
-        
-        
-        function methods = get_interpolation_methods( obj )
-            
-            methods = obj.variables.interpolation_method;
-            
-        end
-        
-        
-        function processes = get_processes( obj )
-            
-            processes = unique( obj.variables.process );
-            
-        end
-        
         
         % retrieval function must take a process name and return the desired process object
-        function value = evaluate( ...
-                obj, ...
-                index, ...
-                retrieval_function, ...
-                parting_dimension, ...
-                gravity_direction ...
-                )
+        function values = evaluate( obj, decision_variables )
+            angles = decision_variables.angles;
+            rotated_case = obj.base_case.generate_rotated_case( angles );
+            pm = ProcessManager( obj.base_case.settings, rotated_case );
+            pm.run();
             
-            name = obj.get_process( index );
-            process_key = ProcessKey( ...
-                name, ...
-                parting_dimension, ...
-                gravity_direction ...
-                );
-            process = retrieval_function( process_key );
-            property = obj.get_property( index );
-            
-            metric_fn_str = sprintf( ...
-                '@(property)%s;\n', ... % must use identifier "property"
-                obj.get_metric( index ) ...
-                );
-            metric_fn = str2func( metric_fn_str );
-            value = metric_fn( process.(property) );
-            
+            values = nan( obj.count, 1 );
+            for i = 1 : obj.count
+                name = obj.variables.process{ i };
+                key = ProcessKey( name );
+                process = pm.get( key );
+                property = obj.variables.property{ i };
+                
+                metric_fn_str = sprintf( ...
+                    "@(property)%s;\n", ... % must use identifier "property"
+                    obj.variables.metric{ i } ...
+                    );
+                metric_fn = str2func( metric_fn_str );
+                values( i ) = metric_fn( process.(property) );
+            end
+            values = num2cell( [ angles values.' ] );
+            vn = [ decision_variables.tags obj.tags.' ];
+            values = table( values{ : }, 'variablenames', vn );
         end
         
+        function value = get.count( obj )
+            value = size( obj.variables, 1 );
+        end
+        
+        function value = get.tags( obj )
+            value = obj.variables.tag;
+        end
+        
+        function value = get.titles( obj )
+            value = obj.variables.title;
+        end
+        
+        function value = get.interpolation_methods( obj )
+            value = obj.variables.interpolation_method;
+        end
+        
+        function value = get.process_names( obj )
+            value = unique( obj.variables.process );
+        end
     end
-    
     
     properties ( Access = private )
-        
-        variables
-        
+        variables table
+        base_case OrientationBaseCase
     end
     
-    
-    methods ( Access = private )
-        
-        function process = get_process( obj, index )
-            
-            process = obj.variables{ index, 'process' }{ 1 };
-            
-        end
-        
-        
-        function property = get_property( obj, index )
-            
-            
-            property = obj.variables{ index, 'property' }{ 1 };
-            
-        end
-        
-        
-        function metric = get_metric( obj, index )
-            
-            
-            metric = obj.variables{ index, 'metric' }{ 1 };
-            
-        end
-        
+    properties ( Access = private, Constant )
+        type_to_interpolation_method containers.Map = containers.Map( ...
+            { 'categorical' 'ordinal' 'continuous' }, ...
+            { 'nearest' 'nearest' 'natural' } ...
+            );
     end
-    
     
     methods ( Access = private, Static )
-        
-        function variables = read_objective_variables( path )
-            
-            variables = struct2table( read_json_file( path ) );
-            variables.interpolation_method = ...
-                ObjectiveVariables.types_to_interp_methods( variables.type );
-            
-        end
-        
-        
-        function methods = types_to_interp_methods( types )
-            
-            types_to_interpolation_methods_map = containers.Map( ...
-                { ...
-                'categorical', ...
-                'ordinal', ...
-                'continuous' ...
-                }, ...
-                { ...
-                'nearest', ...
-                'nearest', ...
-                'natural' ...
-                } ...
-                );
-            methods = types;
-            for i = 1 : numel( types )
-                
-                methods{ i } = types_to_interpolation_methods_map( types{ i } );
-                
+        function variables = read_objective_variables( file )
+            variables = struct2table( read_json_file( file ) );
+            methods = cell( height( variables ), 1 );
+            for i = 1 : height( variables )
+                methods{ i } = ObjectiveVariables.type_to_interpolation_method( variables.type{ i } );
             end
-            
+            variables.interpolation_methods = methods;
         end
-        
     end
     
 end

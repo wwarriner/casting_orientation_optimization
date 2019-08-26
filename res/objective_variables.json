@@ -1,48 +1,57 @@
 [
+	{
+		"tag": "fd_inaccessibility_max",
+		"title": "Feeder, Max of 1 - Validity",
+		"type": "continuous",
+		"process": "Feeders",
+		"property": "accessibility",
+		"metric": "max( 1 - property )",
+		"notes": "Largest volume intersection between feeders and casting."
+	},
+	{
+		"tag": "fd_total_interface_area",
+		"title": "Feeder, Interface Area",
+		"type": "continuous",
+		"process": "Feeders",
+		"property": "interface_area",
+		"metric": "sum( property )",
+		"notes": "Interface area between component and feeders."
+	},
+	{
+		"tag": "pp_reciprocal_projected_area",
+		"title": "Reciprocal of Projected Parting Cross-Section Area",
+		"type": "continuous",
+		"process": "Parting",
+		"property": "area",
+		"metric": "1 ./ property",
+		"notes": "Projected area perpendicular to parting direction."
+	},
+	{
+		"tag": "pp_flatness",
+		"title": "Parting Line Flatness",
+		"type": "continuous",
+		"process": "Parting",
+		"property": "flatness",
+		"metric": "property( 1 )",
+		"notes": "Parting line flatness."
+	},
+	{
+		"tag": "pp_draw",
+		"title": "Draw Distance",
+		"type": "continuous",
+		"process": "Parting",
+		"property": "draw",
+		"metric": "property",
+		"notes": "Draw along parting direction."
+	},
     {
 		"tag": "uc_count",
-		"title": "Undercut, Count",
+		"title": "Undercut Count",
 		"type": "ordinal",
 		"process": "Undercuts",
 		"property": "count",
 		"metric": "property",
-		"notes": "count of undercuts"
-	},
-	{
-		"tag": "pp_projected_area_reciprocal",
-		"title": "Parting, Reciprocal of Projected Area",
-		"type": "continuous",
-		"process": "PartingPerimeter",
-		"property": "projected_area",
-		"metric": "1 ./ property",
-		"notes": "projected area along parting direction ideally maximized"
-	},
-	{
-		"tag": "pp_flatness",
-		"title": "Parting, Flatness",
-		"type": "continuous",
-		"process": "PartingPerimeter",
-		"property": "flatness",
-		"metric": "property",
-		"notes": "flatness of parting line ideally minimized"
-	},
-	{
-		"tag": "pp_draw",
-		"title": "Parting, Draw",
-		"type": "continuous",
-		"process": "PartingPerimeter",
-		"property": "draw",
-		"metric": "property",
-		"notes": "draw along parting direction ideally minimized"
-	},
-	{
-		"tag": "draft_metric",
-		"title": "Draft, Metric",
-		"type": "continuous",
-		"process": "Component",
-		"property": "reduced_draft_metric",
-		"metric": "property",
-		"notes": "volume of material added by required draft ideally minimized"
+		"notes": "Count of undercuts."
 	},
 	{
 		"tag": "uc_volume",
@@ -51,78 +60,6 @@
 		"process": "Undercuts",
 		"property": "volume",
 		"metric": "property",
-		"notes": "volume of undercuts ideally minimized"
-	},
-	{
-		"tag": "fd_inaccessibility_max",
-		"title": "Feeder, Max of 1 - Validity",
-		"type": "continuous",
-		"process": "Feeders",
-		"property": "get_accessibility_ratios",
-		"metric": "max( 1 - property )",
-		"notes": "worst case of accessibility over all feeders minimized"
-	},
-	{
-		"tag": "fd_total_intersection_volume",
-		"title": "Feeder, Intersection Volume",
-		"type": "continuous",
-		"process": "Feeders",
-		"property": "get_total_intersection_volume",
-		"metric": "property",
-		"notes": "intersection between component and feeders minimized"
-	},
-	{
-		"tag": "fd_total_interface_area",
-		"title": "Feeder, Interface Area",
-		"type": "continuous",
-		"process": "Feeders",
-		"property": "get_total_interface_area",
-		"metric": "property",
-		"notes": "interface area between component and feeders minimized"
-	},
-	{
-		"tag": "wf_gating_opportunity_reciprocal",
-		"title": "Waterfall, Reciprocal Gating Opportunity",
-		"type": "continuous",
-		"process": "Waterfall",
-		"property": "gating_opportunity",
-		"metric": "1 ./ property",
-		"notes": "gating_opportunity ideally maximized"
-	},
-	{
-		"tag": "wf_worst_drop_max",
-		"title": "Waterfall, Max Worst-Case Drop Height",
-		"type": "continuous",
-		"process": "Waterfall",
-		"property": "worst_drop",
-		"metric": "max( property( : ) )",
-		"notes": "worst case of drop height minimized"
-	},
-	{
-		"tag": "flask_height",
-		"title": "Flask, Height",
-		"type": "continuous",
-		"process": "Feeders",
-		"property": "get_total_rigged_height",
-		"metric": "property",
-		"notes": "required flask height ideally minimized"
-	},
-	{
-		"tag": "core_count",
-		"title": "Core, Count",
-		"type": "ordinal",
-		"process": "CoreDirectional",
-		"property": "count",
-		"metric": "property",
-		"notes": "count of direction-specific cores"
-	},
-	{
-		"tag": "core_volume",
-		"title": "Core, Volume",
-		"type": "continuous",
-		"process": "CoreDirectional",
-		"property": "volume",
-		"metric": "property",
-		"notes": "volume of direction-specific cores"
+		"notes": "Volume of undercuts."
 	}
 ]

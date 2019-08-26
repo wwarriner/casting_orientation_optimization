@@ -1,161 +1,62 @@
-classdef (Sealed) OrientationBaseCase < handle
+classdef OrientationBaseCase < Saveable
     
-    methods ( Access = public )
-        
-        function obj = OrientationBaseCase( ...
-                component_path, ...
-                feeders_path, ...
-                option_path, ...
-                objective_variables_path ...
-                )
-            
-            obj.component = Component.load_obj( component_path );
-            obj.feeders = Feeders.load_obj( feeders_path );
-            obj.options = Options( option_path );
-            obj.objective_variables = ...
-                ObjectiveVariables( objective_variables_path );
-            
-        end
-        
-        
-        function results = determine_results_as_table( obj, angles )
-            
-            results = array2table( obj.determine_results( angles ) );
-            results.Properties.VariableNames = obj.compose_titles();
-            
-        end
-        
-        
-        function objectives = determine_objectives( obj, angles )
-            
-            obj.options.set( 'manager.user_needs', obj.objective_variables.get_processes() );
-            rotated_case = obj.generate_rotated_case( angles );
-            
-            try
-                pm = ProcessManager( obj.options, rotated_case );
-                pm.run();
-            catch e
-                fprintf( 1, '%s\n', getReport( e ) );
-            end
-            
-            parting_dimension = obj.options.get( 'manager.parting_dimensions' );
-            gravity_direction = obj.options.get( 'manager.gravity_directions' );
-            objective_count = obj.objective_variables.get_objective_count();
-            objectives = nan( 1, objective_count );
-            for i = 1 : objective_count
-                
-                objectives( i ) = obj.objective_variables.evaluate( ...
-                    i, ...
-                    @rotated_case.get, ...
-                    parting_dimension, ...
-                    gravity_direction ...
-                    );
-                
-            end
-            
-        end
-        
-        
-        function name = get_name( obj )
-            
-            name = obj.component.name;
-            
-        end
-        
+    properties ( SetAccess = private )
+        settings Settings
     end
     
-    
-    methods ( Access = public, Static )
-        
-        
-        function titles = get_decision_variable_titles()
-            
-            titles = { 'phi'; 'theta' };
-            
-        end
-        
-        
-        function count = get_decision_variable_count()
-            
-            count = numel( OrientationBaseCase.get_decision_variable_titles() );
-            
-        end
-        
-        
-        function lb = get_decision_variable_lower_bounds()
-            
-            [ phi, theta ] = unit_sphere_ranges();
-            lb = [ phi( 1 ); theta( 1 ) ];
-            
-        end
-        
-        
-        function ub = get_decision_variable_upper_bounds()
-            
-            [ phi, theta ] = unit_sphere_ranges();
-            ub = [ phi( 2 ); theta( 2 ) ];
-            
-        end
-        
+    properties ( SetAccess = private, Dependent )
+        name(1,1) string
     end
     
-    
-    properties ( Access = private )
+    methods
+        function obj = OrientationBaseCase( settings )
+            user_needs = settings.manager.user_needs;
+            cleaner = onCleanup( @()obj.restore_user_needs( settings, user_needs ) );
+            settings.manager.user_needs = { "Casting" "Feeders" };
+            
+            pm = ProcessManager( settings );
+            pm.run();
+            casting = pm.get( ProcessKey( Casting.NAME ) );
+            feeders = pm.get( ProcessKey( Feeders.NAME ) );
+            
+            obj.settings = settings;
+            obj.casting = casting;
+            obj.feeders = feeders;
+        end
         
-        component
-        feeders
-        options
-        objective_variables
-        
-    end
-    
-    
-    methods ( Access = private )
+        function name = get.name( obj )
+            name = obj.casting.name;
+        end
         
         function rotated_case = generate_rotated_case( obj, angles )
+            assert( isa( angles, 'double' ) );
+            assert( isreal( angles ) );
+            assert( all( isfinite( angles ) ) );
+            assert( isvector( angles ) );
+            assert( numel( angles ) == 2 );
             
-            r = Rotator( angles, obj.component.centroid() );
-            rotated_case = Results( obj.options );
+            r = Rotation();
+            r.angles = [ angles 0 ];
+            r.origin = obj.casting.centroid;
+            c = obj.casting.rotate( r );
+            f = obj.feeders.rotate( r );
             
-            component_pk = ProcessKey( Component.NAME );
-            rotated_case.add( component_pk, obj.component.rotate( r ) );
-            
-            mr = Mesh( rotated_case, obj.options );
-            mr.run();
-            mesh_pk = ProcessKey( Mesh.NAME );
-            rotated_case.add( mesh_pk, mr );
-            
-            feeders_pk = ProcessKey( Feeders.NAME );
-            rotated_case.add( feeders_pk, obj.feeders.rotate( r, mr ) );
-            
+            rotated_case = Results( obj.settings );
+            rotated_case.add( ProcessKey( c.NAME ), c );
+            rotated_case.add( ProcessKey( f.NAME ), f );
         end
-        
-        
-        function results = determine_results( obj, angles )
-            
-            angles = angles( : ).';
-            objectives = obj.determine_objectives( angles );
-            results = [ angles objectives ];
-            
+    end
+    
+    properties ( Access = private )
+        casting Casting
+        mesh Mesh
+        feeders Feeders
+    end
+    
+    methods ( Access = private, Static )
+        function restore_user_needs( settings, user_needs )
+            settings.manager.user_needs = user_needs;
         end
-        
-        
-        function titles = compose_titles( obj )
-            
-            titles = [ ...
-                obj.get_decision_variable_titles(); ...
-                obj.get_objective_variable_titles() ...
-                ];
-            
-        end
-        
-        
-        function titles = get_objective_variable_titles( obj )
-            
-            titles = obj.objective_variables.get_tags();
-            
-        end
-        
     end
     
 end
