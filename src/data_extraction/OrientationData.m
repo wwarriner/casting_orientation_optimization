@@ -1,4 +1,4 @@
-classdef OrientationData < handle
+classdef OrientationData < handle & Saveable
     
     properties ( SetAccess = private )
         decision_tags(1,:) string
@@ -20,80 +20,122 @@ classdef OrientationData < handle
     methods
         function obj = OrientationData( data )
             assert( istable( data ) );
-            assert( all( varfun( @isnumeric, data ) ) );
+            assert( all( varfun( @isnumeric, data, 'outputformat', 'uniform' ) ) );
             
             props = data.Properties.CustomProperties;
-            assert( isprop( props, "decision_tags" ) );
-            assert( isprop( props, "decision_titles" ) );
-            assert( isprop( props, "objective_tags" ) );
-            assert( isprop( props, "objective_titles" ) );
-            assert( isprop( props, "pareto_tag" ) );
-            assert( isprop( props, "stl_file" ) );
+            pnames = properties( props );
+            assert( ismember( "decision_tags", pnames ) ); % isprop returns incorrect result
+            assert( ismember( "decision_titles", pnames ) );
+            assert( ismember( "objective_tags", pnames ) );
+            assert( ismember( "objective_titles", pnames ) );
+            assert( ismember( "stl_file", pnames ) );
             
             var_names = data.Properties.VariableNames;
             
             decision_tags = props.decision_tags;
-            if ischar( decision_tags )
+            if ischar( decision_tags ) || iscellstr( decision_tags )
                 decision_tags = string( decision_tags );
             end
             assert( isstring( decision_tags ) );
             assert( isvector( decision_tags ) );
             assert( numel( unique( decision_tags ) ) == numel( decision_tags ) );
             assert( all( ismember( decision_tags, var_names ) ) );
+            props.decision_tags = decision_tags;
             
             decision_titles = props.decision_titles;
-            if ischar( decision_titles )
+            if ischar( decision_titles ) || iscellstr( decision_titles )
                 decision_titles = string( decision_titles );
             end
             assert( isstring( decision_titles ) );
             assert( isvector( decision_titles ) );
             assert( numel( unique( decision_titles ) ) == numel( decision_titles ) );
             assert( numel( decision_titles ) == numel( decision_tags ) );
+            props.decision_titles = decision_titles;
             
             objective_tags = props.objective_tags;
-            if ischar( objective_tags )
+            if ischar( objective_tags ) || iscellstr( objective_tags )
                 objective_tags = string( objective_tags );
             end
             assert( isstring( objective_tags ) );
             assert( isvector( objective_tags ) );
             assert( numel( unique( objective_tags ) ) == numel( objective_tags ) );
             assert( all( ismember( objective_tags, var_names ) ) );
+            props.objective_tags = objective_tags;
             
             objective_titles = props.objective_titles;
-            if ischar( objective_titles )
+            if ischar( objective_titles ) || iscellstr( objective_titles )
                 objective_titles = string( objective_titles );
             end
             assert( isstring( objective_titles ) );
             assert( isvector( objective_titles ) );
             assert( numel( unique( objective_titles ) ) == numel( objective_titles ) );
             assert( numel( objective_titles ) == numel( objective_titles ) );
-            
-            pareto_tag = props.pareto_tag;
-            if ischar( pareto_tag )
-                pareto_tag = string( pareto_tag );
-            end
-            assert( isstring( pareto_tag ) );
-            assert( isscalar( pareto_tag ) );
-            assert( ismember( pareto_tag, var_names ) );
-            
-            assert( isempty( intersect( decision_tags, objective_tags ) ) );
-            assert( isempty( intersect( pareto_tag, objective_tags ) ) );
-            assert( isempty( intersect( pareto_tag, decision_tags ) ) );
+            props.objective_titles = objective_titles;
             
             stl_file = props.stl_file;
-            if ischar( stl_file )
+            if ischar( stl_file ) || iscellstr( stl_file )
                 stl_file = string( stl_file );
             end
             assert( isstring( stl_file ) );
             assert( isscalar( stl_file ) );
+            [ ~, name, ext ] = fileparts( stl_file );
+            stl_file = name + ext;
+            props.stl_file = stl_file;
+            
+            if ismember( "pareto_tag", pnames )
+                pareto_tag = props.pareto_tag;
+                if ischar( pareto_tag ) || iscellstr( pareto_tag )
+                    pareto_tag = string( pareto_tag );
+                end
+                assert( isstring( pareto_tag ) );
+                assert( isscalar( pareto_tag ) );
+                assert( ismember( pareto_tag, var_names ) );
+
+                assert( isempty( intersect( decision_tags, objective_tags ) ) );
+                assert( isempty( intersect( pareto_tag, objective_tags ) ) );
+                assert( isempty( intersect( pareto_tag, decision_tags ) ) );
+                props.pareto_tag = pareto_tag;
+            else
+                data = addprop( data, obj.DEFAULT_PARETO_TAG, "table" );
+                pareto_tag = obj.DEFAULT_PARETO_TAG;
+            end
             
             obj.data = data;
+            obj.data.Properties.CustomProperties = props;
             obj.decision_tags = decision_tags;
             obj.decision_titles = decision_titles;
             obj.objective_tags = objective_tags;
             obj.objective_titles = objective_titles;
             obj.pareto_tag = pareto_tag;
             obj.stl_file = stl_file;
+        end
+        
+        function clone = merge( obj, others )
+            assert( isa( others, mfilename( "class" ) ) );
+            assert( isvector( others ) );
+            
+            t = obj.data;
+            c = nan( numel( others ), width( t ) );
+            c = array2table( c );
+            c.Properties.VariableNames = t.Properties.VariableNames;
+            t = [ t; c ];
+            tcp = t.Properties.CustomProperties;
+            for i = 1 : numel( others )
+                d = others( i ).data;
+                dcp = d.Properties.CustomProperties;
+                assert( all( sort( tcp.decision_tags ) == sort( dcp.decision_tags ) ) );
+                assert( all( sort( tcp.decision_titles ) == sort( dcp.decision_titles ) ) );
+                assert( all( sort( tcp.objective_tags ) == sort( dcp.objective_tags ) ) );
+                assert( all( sort( tcp.objective_titles ) == sort( dcp.objective_titles ) ) );
+                assert( tcp.stl_file == dcp.stl_file );
+                if ismember( "pareto_tag", properties( tcp ) )
+                    assert( ismember( "pareto_tag", properties( dcp ) ) );
+                    assert( tcp.pareto_tag == dcp.pareto_tag );
+                end
+                t{ i + 1, : } = d{ :, : };
+            end
+            clone = OrientationData( t );
+            clone.compute_pareto_front();
         end
         
         function value = get_by_tag( obj, tag )
@@ -135,9 +177,33 @@ classdef OrientationData < handle
     end
     
     methods ( Access = private )
-        function value = get_pareto_front( obj )
-            value = obj.data{ :, obj.pareto_tag };
+        function compute_pareto_front( obj )
+            pareto_front = find_pareto_indices( obj.objectives );
+            obj.data{ :, obj.DEFAULT_PARETO_TAG } = false( height( obj.data ), 1 );
+            obj.data{ pareto_front, obj.DEFAULT_PARETO_TAG } = true;
+            obj.pareto_tag = obj.DEFAULT_PARETO_TAG;
         end
+        
+        function value = get_pareto_front( obj )
+            if obj.has_pareto_front()
+                value = obj.data{ :, obj.pareto_tag };
+            else
+                value = ones( height( obj.data ), 1 );
+            end
+        end
+        
+        function value = has_pareto_front( obj )
+            value = obj.pareto_tag ~= "";
+        end
+        
+        function set_pareto_tag( obj, value )
+            obj.pareto_tag = value;
+            obj.data.Properties.CustomProperties.pareto_tag = value;
+        end
+    end
+    
+    properties ( Access = private, Constant )
+        DEFAULT_PARETO_TAG = "pareto_front";
     end
     
 end

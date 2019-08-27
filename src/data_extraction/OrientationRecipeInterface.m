@@ -1,23 +1,16 @@
-classdef OrientationRecipeInterface
-    %ORIENTATIONRECIPEINTERFACE Summary of this class goes here
-    %   Detailed explanation goes here
+classdef (Abstract) OrientationRecipeInterface < handle
     
-    properties
-        Property1
+    methods ( Abstract )
+        % @evaluate uses the input @decisions to transform an
+        % OrientationBaseCase object into an OrientationData object.
+        % Inputs:
+        % - @base_case, an OrientationBaseCase object.
+        % - @angles, a real, finite, double vector of angles representing
+        % the decision variables
+        % Outputs:
+        % - @data, an OrientationData object.
+        data = evaluate( obj, base_case, angles )
     end
     
-    methods
-        function obj = OrientationRecipeInterface(inputArg1,inputArg2)
-            %ORIENTATIONRECIPEINTERFACE Construct an instance of this class
-            %   Detailed explanation goes here
-            obj.Property1 = inputArg1 + inputArg2;
-        end
-        
-        function outputArg = method1(obj,inputArg)
-            %METHOD1 Summary of this method goes here
-            %   Detailed explanation goes here
-            outputArg = obj.Property1 + inputArg;
-        end
-    end
 end
 

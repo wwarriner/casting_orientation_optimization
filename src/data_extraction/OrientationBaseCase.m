@@ -6,6 +6,7 @@ classdef OrientationBaseCase < Saveable
     
     properties ( SetAccess = private, Dependent )
         name(1,1) string
+        file(1,1) string
     end
     
     methods
@@ -24,10 +25,6 @@ classdef OrientationBaseCase < Saveable
             obj.feeders = feeders;
         end
         
-        function name = get.name( obj )
-            name = obj.casting.name;
-        end
-        
         function rotated_case = generate_rotated_case( obj, angles )
             assert( isa( angles, 'double' ) );
             assert( isreal( angles ) );
@@ -44,6 +41,16 @@ classdef OrientationBaseCase < Saveable
             rotated_case = Results( obj.settings );
             rotated_case.add( ProcessKey( c.NAME ), c );
             rotated_case.add( ProcessKey( f.NAME ), f );
+        end
+        
+        function name = get.name( obj )
+            name = obj.casting.name;
+        end
+        
+        function file = get.file( obj )
+            file = obj.casting.input_file;
+            file = string( file );
+            assert( file ~= "" );
         end
     end
     
