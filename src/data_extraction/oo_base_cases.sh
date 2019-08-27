@@ -4,7 +4,7 @@ ROOT_DIR=$(realpath "$SHELL_DIR/../../../..")
 PATH=$PATH:"$ROOT_DIR"
 
 # get array of all stls in folder
-STL_FOLDER_PATH=$ROOT_DIR'/ict_stl'
+STL_FOLDER_PATH=$ROOT_DIR'/oo_stl'
 shopt -s nocaseglob
 STL_PATHS=()
 for filename in $STL_FOLDER_PATH/*.stl; do

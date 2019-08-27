@@ -5,7 +5,7 @@ PATH=$PATH:"$ROOT_DIR"
 COMPONENT_NAME=$1
 
 REPOS_DIR=$ROOT_DIR'/repos'
-OUTPUT_DIR=$ROOT_DIR'/results'
+OUTPUT_DIR=$ROOT_DIR'/oo_results'
 
 # Toolsuite
 CGT_DIR=$REPOS_DIR'/casting_geometric_toolsuite'
@@ -14,7 +14,7 @@ CGT_DIR=$REPOS_DIR'/casting_geometric_toolsuite'
 COO_DIR=$REPOS_DIR'/casting_orientation_optimization'
 SETTINGS_FILE=$COO_DIR'/src/data_extraction/extraction_settings.json'
 
-BASE_CASE_PATH=$ROOT_DIR'/oo_component_data/'$COMPONENT_NAME'_base_case.mat'
+BASE_CASE_PATH=$ROOT_DIR'/oo_data/'$COMPONENT_NAME'_base_case.mat'
 
 TIME=$(date +%s%N)
 OUTPUT_BASE_PATH=$ROOT_DIR'/oo_results/'$COMPONENT_NAME
