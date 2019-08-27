@@ -34,11 +34,11 @@ while ~isempty( candidate_objectives )
     top = candidate_objectives( 1, : );
     greater = ( top > full_objectives );
     greater_equal = ( top >= full_objectives );
-    pareto_dominant = ~( all( greater_equal ) & any( greater ) );
+    pareto_dominant = ~( all( greater_equal, 2 ) & any( greater, 2 ) );
     
     %% REMOVE NON-DOMINANT ENTRIES
     % and store index if current is dominant
-    if pareto_dominant
+    if any( pareto_dominant )
         less = ( top < candidate_objectives );
         less_equal = ( top <= candidate_objectives );
         dominated = all( less_equal, 2 ) & any( less, 2 );
