@@ -60,7 +60,7 @@ classdef FeasibilityThresholdSelectionController < handle
             end
             
             % set up object
-            objectives = obj.model.get_objectives();
+            objectives = obj.model.get_tags();
             obj.check_boxes = containers.Map( objectives, cbs );
             obj.sliders = containers.Map( objectives, sls );
             obj.spinners = containers.Map( objectives, sps );

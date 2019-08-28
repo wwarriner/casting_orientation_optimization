@@ -14,7 +14,7 @@ classdef DataSelectionController < handle
         end
         
         function set_drop_down_items( obj )
-            obj.objective_drop_down.Items = obj.model.get_objectives();
+            obj.objective_drop_down.Items = obj.model.get_tags();
         end
         
         function update_all( obj )

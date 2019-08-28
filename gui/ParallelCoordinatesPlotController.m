@@ -58,6 +58,7 @@ classdef ParallelCoordinatesPlotController < handle
     
     properties ( Access = private )
         axes
+        pch
         parallel_coordinates_plot_above_handle
         parallel_coordinates_plot_below_handle
         marker_handles
@@ -90,7 +91,7 @@ classdef ParallelCoordinatesPlotController < handle
                 mhs{ i } = mh;
             end
             obj.marker_handles = containers.Map( ...
-                obj.model.get_objectives(), ...
+                obj.model.get_tags(), ...
                 mhs ...
                 );
             limits = obj.model.get_all_data_limits();
@@ -129,7 +130,7 @@ classdef ParallelCoordinatesPlotController < handle
                     sbhs{ i } = sbh;
                 end
                 obj.shaded_box_handles = containers.Map( ...
-                    obj.model.get_objectives(), ...
+                    obj.model.get_tags(), ...
                     sbhs ...
                     );
             end
@@ -147,44 +148,35 @@ classdef ParallelCoordinatesPlotController < handle
         end
         
         function update_plot( obj )
-            % DRAW COORDS
-            % color from http://jfly.iam.u-tokyo.ac.jp/color/#redundant2
-            if ~isempty( obj.parallel_coordinates_plot_above_handle )
-                delete( obj.parallel_coordinates_plot_above_handle );
+            limits = obj.model.get_all_data_limits().';
+            v = obj.model.get_all_pareto_front_values();
+            v = ( v - limits( 1, : ) ) ./ ( limits( 2, : ) - limits( 1, : ) );
+            if isempty( obj.pch )
+                obj.pch = parallelcoords( ...
+                    obj.axes, ...
+                    v, ...
+                    'color', obj.GRAY ...
+                    );
             end
-            limits = obj.model.get_all_data_limits();
-            v = obj.model.get_all_pareto_front_values_above_threshold();
-            for i = 1 : obj.model.get_objective_count()
-                v( :, i ) = ( v( :, i ) - limits( i, 1 ) ) ./ ( limits( i, 2 ) - limits( i, 1 ) );
+            below = find( obj.model.select_pareto_front_below() );
+            for i = 1 : numel( below )
+                h = obj.pch( below( i ) );
+                h.Color = obj.ORANGE;
+                h.YData = v( below( i ), : );
             end
-            pch = parallelcoords( ...
-                obj.axes, ...
-                v, ...
-                'color', [ 0.9 0.9 0.9 ] ...
-                ); % TODO Replace with parallelplot in R2019a
-            obj.parallel_coordinates_plot_above_handle = pch;
-            if ~isempty( obj.parallel_coordinates_plot_below_handle )
-                delete( obj.parallel_coordinates_plot_below_handle );
+            above = find( ~obj.model.select_pareto_front_below() );
+            for i = 1 : numel( above )
+                h = obj.pch( above( i ) );
+                h.Color = obj.GRAY;
+                h.YData = v( above( i ), : );
             end
-            v = obj.model.get_all_pareto_front_values_below_threshold();
-            for i = 1 : obj.model.get_objective_count()
-                v( :, i ) = ( v( :, i ) - limits( i, 1 ) ) ./ ( limits( i, 2 ) - limits( i, 1 ) );
-            end
-            pch = parallelcoords( ...
-                obj.axes, ...
-                v, ...
-                'color', [ 0.9 0.6 0.0 ] ...
-                ); % TODO Replace with parallelplot in R2019a
-            obj.parallel_coordinates_plot_below_handle = pch;
-            
+                        
             % RESET AXES
             obj.axes.XTick = 1 : obj.model.get_objective_count();
             obj.axes.XLim = [ 0.5 obj.model.get_objective_count() + 0.5 ];
             
             obj.axes.YLim = [ 0 1 ];
-            obj.axes.YTick = obj.axes.YLim( 1 ) : ...
-                0.1 : ...
-                obj.axes.YLim( 2 );
+            obj.axes.YTick = obj.axes.YLim( 1 ) : 0.1 : obj.axes.YLim( 2 );
         end
         
         function objective = determine_clicked_objective( obj, point )
@@ -211,6 +203,11 @@ classdef ParallelCoordinatesPlotController < handle
             %             point.y = raw( 2 );
             point = [ 0 0 ];
         end
+    end
+    
+    properties ( Access = private, Constant )
+        GRAY = [ 0.9 0.9 0.9 ];
+        ORANGE = [ 0.9 0.6 0.0 ];
     end
     
     methods ( Access = private, Static )

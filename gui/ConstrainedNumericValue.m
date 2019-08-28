@@ -1,60 +1,54 @@
 classdef ConstrainedNumericValue < handle
     
-    methods ( Access = public )
-        function obj = ConstrainedNumericValue( min, max, initial )
-            obj.min = min;
-            obj.max = max;
-            obj.value = initial;
-        end
-        
+    properties
+        range(1,2) double {mustBeReal,mustBeFinite} = [ 0 1 ]
+    end
+    
+    properties ( Dependent )
+        ratio(1,1) double {mustBeReal,mustBeFinite}
+    end
+    
+    properties ( SetAccess = private )
+        value(1,1) double {mustBeReal,mustBeFinite} = 0.5
+    end
+    
+    methods
         function changed = update( obj, new_value )
             constrained_value = obj.constrain_value( new_value );
             changed = obj.has_changed( constrained_value );
-            obj.set_value( constrained_value );
+            obj.value = constrained_value;
         end
         
-        function value = get_value( obj )
-            value = obj.value;
-        end
-        
-        function min = get_min( obj )
-            min = obj.min;
-        end
-        
-        function max = get_max( obj )
-            max = obj.max;
-        end
-        
-        function range = get_range( obj )
-            range.min = obj.get_min();
-            range.max = obj.get_max();
-        end
-        
-        function set_range( obj, new_min, new_max )
-            assert( new_min < new_max );
+        function set.range( obj, v )
+            v = sort( v );
+            assert( 0 < diff( v ) );
             
-            ratio = ( obj.value - obj.min ) / ( obj.max - obj.min );
-            new_value = ratio * ( new_max - new_min ) + new_min;
-            obj.min = new_min;
-            obj.max = new_max;
+            new_value = obj.ratio * diff( v ) + v( 1 ); %#ok<MCSUP>
+            obj.range = v;
             obj.update( new_value );
         end
-    end
-    
-    properties ( Access = private )
-        min
-        max
-        value
+        
+        function set.ratio( obj, v )
+            assert( 0.0 <= v );
+            assert( v <= 1.0 );
+            
+            r = obj.range;
+            obj.update( v * diff( r ) + r( 1 ) );
+        end
+        
+        function v = get.ratio( obj )
+            v = ( obj.value - obj.range( 1 ) ) ./ diff( obj.range );
+        end
     end
     
     methods ( Access = private )
         function value = constrain_value( obj, new_value )
             if isnan( new_value )
                 value = obj.value;
-            elseif new_value < obj.min
-                value = obj.min;
-            elseif obj.max < new_value
-                value = obj.max;
+            elseif new_value < obj.range( 1 )
+                value = obj.range( 1 );
+            elseif obj.range( 2 ) < new_value
+                value = obj.range( 2 );
             else
                 value = new_value;
             end
@@ -62,10 +56,6 @@ classdef ConstrainedNumericValue < handle
         
         function changed = has_changed( obj, constrained_value )
             changed = constrained_value ~= obj.value;
-        end
-        
-        function set_value( obj, value )
-            obj.value = value;
         end
     end
     

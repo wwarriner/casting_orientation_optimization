@@ -21,9 +21,10 @@ classdef DefaultRecipe < OrientationRecipeInterface
             rotated_case.get( ProcessKey( Parting.NAME ) );
             rotated_case.get( ProcessKey( Undercuts.NAME ) );
             
-            t = obj.get_objective_table( rotated_case );
+            [ t, interp ] = obj.get_objective_table( rotated_case );
             objective_tags = t.Properties.VariableNames;
             objective_titles = make_title( objective_tags );
+            interp_methods = interp;
             
             decision_tags = [ "phi" "theta" ];
             decision_titles = make_title( decision_tags );
@@ -36,6 +37,7 @@ classdef DefaultRecipe < OrientationRecipeInterface
                 decision_titles ...
                 objective_tags ...
                 objective_titles ...
+                interp_methods ...
                 stl_file ...
                 };
             prop_names = [ ...
@@ -43,6 +45,7 @@ classdef DefaultRecipe < OrientationRecipeInterface
                 "decision_titles" ...
                 "objective_tags" ...
                 "objective_titles" ...
+                "interp_methods" ...
                 "stl_file" ...
                 ];
             t = addprop( t, prop_names, repmat( "table", size( prop_names ) ) );
@@ -57,19 +60,47 @@ classdef DefaultRecipe < OrientationRecipeInterface
     end
     
     methods ( Access = private, Static )
-        function t = get_objective_table( rotated_case )
+        function [ t, interp ] = get_objective_table( rotated_case )
             s = rotated_case.compose_summary();
             m = table2map( s );
+            
             p = containers.Map( "keytype", "char", "valuetype", "any" );
-            p( "feeder_median_inaccessibility" ) = 1 - m( "Feeders_median_accessibility" );
-            p( "feeder_max_inaccessibility" ) = 1 - m( "Feeders_min_accessibility" );
-            p( "feeder_interface_area" ) = m( "Feeders_sum_interface_area" ) ./ m( "Casting_surface_area" );
-            p( "parting_projected_area" ) = m( "Parting_area" ) ./ m( "Casting_surface_area" );
-            p( "parting_flatness" ) = m( "Parting_flatness" );
-            p( "parting_draw" ) = m( "Parting_draw" ) ./ m( "Casting_bounding_sphere_diameter" );
-            p( "undercut_count" ) = m( "Undercuts_count" );
+            i = containers.Map( "keytype", "char", "valuetype", "any" );
+            
+            k = "feeder_median_inaccessibility";
+            p( k ) = 1 - m( "Feeders_median_accessibility" );
+            i( k ) = "linear";
+            
+            k = "feeder_max_inaccessibility";
+            p( k ) = 1 - m( "Feeders_min_accessibility" );
+            i( k ) = "linear";
+            
+            k = "feeder_interface_area";
+            p( k ) = m( "Feeders_sum_interface_area" ) ./ m( "Casting_surface_area" );
+            i( k ) = "linear";
+            
+            k = "parting_projected_area";
+            p( k ) = m( "Parting_area" ) ./ m( "Casting_surface_area" );
+            i( k ) = "linear";
+            
+            k = "parting_flatness";
+            p( k ) = m( "Parting_flatness" );
+            i( k ) = "linear";
+            
+            k = "parting_draw";
+            p( k ) = m( "Parting_draw" ) ./ m( "Casting_bounding_sphere_diameter" );
+            i( k ) = "linear";
+            
+            k = "undercut_count";
+            p( k ) = m( "Undercuts_count" );
+            i( k ) = "nearest";
+            
+            k = "undercut_volume";
             p( "undercut_volume" ) = m( "Undercuts_volume" ) ./ m( "Casting_convex_volume" );
+            i( k ) = "linear";
+            
             t = map2table( p );
+            interp = i.values();
         end
     end
     

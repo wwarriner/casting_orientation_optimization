@@ -1,290 +1,111 @@
 classdef ResponseData < handle
     
+    properties ( SetAccess = private, Dependent )
+        name(1,1) string
+        count(1,1) string
+        grid_size(1,:) double {mustBeReal,mustBeFinite}
+        tags(1,:) string
+        pareto_front_count(1,1) double {mustBeReal,mustBeFinite,mustBePositive}
+        pareto_front(:,:) double {mustBeReal,mustBeFinite}
+    end
+    
     % all expect radians
-    methods ( Access = public )
-        
-        function obj = ResponseData( data_extractor )
-            
-            obj.name = data_extractor.get_name();
-            obj.titles = data_extractor.get_titles();
-            obj.values = data_extractor.get_objective_values();
-            obj.minima = data_extractor.get_minima_points();
-            obj.pareto_front = data_extractor.get_pareto_front_points();
-            obj.pareto_front_values = data_extractor.get_pareto_front_values();
-            obj.inverse_quantile_interps = data_extractor.get_quantile_inverse_interpolants( obj.values );
-            obj.phi_grid = data_extractor.get_phi_grid();
-            obj.theta_grid = data_extractor.get_theta_grid();
-            
-            obj.quantiles = obj.convert_to_quantiles( ...
-                obj.values, ...
-                obj.inverse_quantile_interps ...
-                );
-            obj.pareto_front_quantiles = obj.convert_to_quantiles( ...
-                obj.pareto_front_values, ...
-                obj.inverse_quantile_interps ...
+    methods
+        function obj = ResponseData( orientation_data, resolution )
+            gridded_data = GriddedData( orientation_data, resolution );
+            minima = obj.compute_minima( ...
+                orientation_data.decisions, ...
+                orientation_data.objectives, ...
+                orientation_data.objective_tags ...
                 );
             
+            obj.orientation_data = orientation_data;
+            obj.gridded_data = gridded_data;
+            obj.minima = minima;
         end
         
-        
-        function name = get_name( obj )
-            
-            name = obj.name;
-            
+        function value = get.name( obj )
+            value = obj.orientation_data.name;
         end
         
-        
-        function count = get_count( obj )
-            
-            count = obj.titles.Count();
-            
+        function value = get.count( obj )
+            value = obj.orientation_data.objective_count;
         end
         
-        
-        function sz = get_grid_size( obj )
-            
-            sz = size( obj.get_phi_grid() );
-            
+        function value = get.grid_size( obj )
+            value = obj.gridded_data.grid_size;
         end
         
-        
-        function titles = get_titles( obj )
-            
-            titles = obj.titles;
-            
+        function value = get.tags( obj )
+            value = obj.orientation_data.objective_tags;
         end
         
-        
-        function tags = get_tags( obj )
-            
-            tags = obj.titles.keys();
-            
+        function value = get.pareto_front_count( obj )
+            value = size( obj.orientation_data.pareto_objectives, 1 );
         end
         
-        
-        function grid = get_phi_grid( obj )
-            
-            grid = obj.phi_grid;
-            
+        function value = get.pareto_front( obj )
+            value = obj.orientation_data.pareto_decisions;
         end
         
-        
-        function grid = get_theta_grid( obj )
-            
-            grid = obj.theta_grid;
-            
+        function values = get_objective_values( obj, tag )
+            values = obj.gridded_data.get_values( tag );
         end
         
-        
-        function value = get_objective_value( obj, point, objective )
-            
-            indices = obj.snap_to_grid_indices( point );
-            [ PHI_INDEX, THETA_INDEX ] = unit_sphere_plot_indices();
-            v = obj.get_objective_values( objective );
-            value = v( indices( THETA_INDEX ), indices( PHI_INDEX ) );
-            
+        function value = get_pareto_front_values( obj, tag )
+            value = obj.orientation_data.get_pareto_by_tag( tag );
         end
         
-        
-        function values = get_objective_values( obj, objective )
-            
-            values = obj.values( objective );
-            
+        function value = get_pareto_front_quantiles( obj, tag )
+            value = obj.get_pareto_front_values( tag );
+            value = obj.gridded_data.to_quantile( value, tag );
         end
         
-        
-        function count = get_pareto_front_count( obj )
-            
-            count = size( obj.pareto_front, 1 );
-            
+        function value = get_objective_value_range( obj, tag )
+            value = obj.orientation_data.get_range( tag );
         end
         
-        
-        function values = get_pareto_front_values( obj, objective )
-            
-            values = obj.pareto_front_values( objective );
-            
+        function value = get_minimum( obj, tag )
+            value = obj.minima( tag );
         end
         
-        
-        function quantiles = get_pareto_front_quantiles( obj, objective )
-            
-            quantiles = obj.pareto_front_quantiles( objective );
-            
+        function value = get_quantile_values( obj, tag )
+            value = obj.gridded_data.get_quantile_values( tag );
         end
         
-        
-        function values = get_objective_value_range( obj, objective )
-            
-            values.min = min( obj.get_objective_values( objective ), [], 'all' );
-            values.max = max( obj.get_objective_values( objective ), [], 'all' );
-            
+        function value = get_thresholded_values( obj, threshold, tag )
+            value = obj.gridded_data.get_thresholded( threshold, tag );
         end
         
-        
-        function values = get_objective_value_ranges( obj )
-            
-            values = containers.Map( ...
-                'keytype', 'char', ...
-                'valuetype', 'any' ...
-                );
-            tags = obj.titles.keys();
-            for i = 1 : obj.get_count()
-                
-                tag = tags{ i };
-                values( tag ) = obj.get_objective_value_range( tag );
-                
-            end
-            
+        function value = get_no_go_values( obj, thresholds, active_states )
+            value = obj.gridded_data.get_no_go( obj, thresholds, active_states );
         end
         
-        
-        function point = get_minimum( obj, objective )
-            
-            point = obj.minima( objective );
-            
+        function value = get_no_go_quantiles( obj, thresholds, active_states )
+            value = obj.gridded_data.get_quantile_no_go( obj, thresholds, active_states );
         end
-        
-        
-        function points = get_pareto_front( obj )
-            
-            points = obj.pareto_front;
-            
-        end
-        
-        
-        function quantile = get_quantile_value( obj, point, objective )
-            
-            value = obj.get_objective_value( point, objective );
-            interpolant = obj.inverse_quantile_interps( objective );
-            quantile = interpolant( value );
-            
-        end
-        
-        
-        function quantiles = get_quantile_values( obj, objective )
-            
-            quantiles = obj.quantiles( objective );
-            
-        end
-        
-        
-        function values = get_thresholded_values( obj, threshold, objective )
-            
-            values = obj.get_objective_values( objective );
-            values = threshold < values;
-            
-        end
-        
-        
-        function values = get_no_go_values( ...
-                obj, ...
-                thresholds, ...
-                usage_states, ...
-                use_quantiles ...
-                )
-            
-            count = thresholds.Count();
-            tags = thresholds.keys();
-            values = true( size( obj.phi_grid ) );
-            for i = 1 : count
-                
-                tag = tags{ i };
-                if ~usage_states( tag )
-                    continue;
-                end
-                
-                threshold = thresholds( tag );
-                if use_quantiles
-                    above = obj.get_quantile_values( threshold, tag );
-                else
-                    above = obj.get_thresholded_values( threshold, tag );
-                end
-                values = values & ~above;
-                
-            end
-            values = ~values;
-            
-        end
-        
-        
-        function point = snap_to_grid( obj, point )
-            
-            indices = obj.snap_to_grid_indices( point );
-            [ PHI_INDEX, THETA_INDEX ] = unit_sphere_plot_indices();
-            point = [ ...
-                obj.phi_grid( indices( THETA_INDEX ), indices( PHI_INDEX ) ) ...
-                obj.theta_grid( indices( THETA_INDEX ), indices( PHI_INDEX ) ) ...
-                ];
-            
-        end
-        
     end
     
-    
-    properties ( Access = public )
-        
-        name
-        titles
-        values
-        quantiles
-        minima
-        pareto_front
-        pareto_front_values
-        pareto_front_quantiles
-        inverse_quantile_interps
-        phi_grid
-        theta_grid
-        
+    properties ( Access = private )
+        orientation_data OrientationData
+        gridded_data GriddedData
+        minima containers.Map
     end
     
-    
-    methods ( Access = private )
-        
-        function indices = snap_to_grid_indices( obj, point )
-            
-            [ PHI_INDEX, THETA_INDEX ] = unit_sphere_plot_indices();
-            phi_index = round( ...
-                ( point( PHI_INDEX ) + pi ) ...
-                * size( obj.phi_grid, 2 ) ...
-                ./ ( 2 * pi ) ...
-                );
-            phi_index = min( phi_index, size( obj.phi_grid, 2 ) );
-            indices( PHI_INDEX ) = max( phi_index, 1 );
-            
-            theta_index = round( ...
-                ( point( THETA_INDEX ) + pi / 2 ) ...
-                * size( obj.theta_grid, 1 ) ...
-                ./ pi ...
-                );
-            theta_index = min( theta_index, size( obj.theta_grid, 1 ) );
-            indices( THETA_INDEX ) = max( theta_index, 1 );
-            
-        end
-        
-    end
-    
-    
-    % construction
     methods ( Access = private, Static )
-        
-        function quantiles = convert_to_quantiles( values, interps )
-            
-            tags = values.keys();
-            quantiles = containers.Map( ...
-                'keytype', 'char', ...
-                'valuetype', 'any' ...
+        function minima = compute_minima( decisions, objectives, tags )
+            minima = containers.Map( ...
+                "keytype", "char", ...
+                "valuetype", "any" ...
                 );
-            for i = 1 : values.Count()
-                
-                tag = tags{ i };
-                interp = interps( tag );
-                quantiles( tag ) = interp( values( tag ) );
-                
+            for i = 1 : size( objectives, 2 )
+                v = objectives( :, i );
+                [ ~, index ] = min( v( : ) );
+                angles = decisions( index, : );
+                angles = constrain_unit_sphere_angles( angles );
+                minima( tags( i ) ) = angles;
             end
-            
         end
-        
     end
     
 end

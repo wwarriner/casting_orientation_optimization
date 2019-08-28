@@ -5,6 +5,7 @@ classdef OrientationData < handle & Saveable
         decision_titles(1,:) string
         objective_tags(1,:) string
         objective_titles(1,:) string
+        interp_methods(1,:) string
         stl_file(1,1) string
     end
     
@@ -33,7 +34,7 @@ classdef OrientationData < handle & Saveable
             var_names = data.Properties.VariableNames;
             
             decision_tags = props.decision_tags;
-            if ischar( decision_tags ) || iscellstr( decision_tags )
+            if ischar( decision_tags ) || iscellstr( decision_tags ) %#ok<ISCLSTR>
                 decision_tags = string( decision_tags );
             end
             assert( isstring( decision_tags ) );
@@ -43,7 +44,7 @@ classdef OrientationData < handle & Saveable
             props.decision_tags = decision_tags;
             
             decision_titles = props.decision_titles;
-            if ischar( decision_titles ) || iscellstr( decision_titles )
+            if ischar( decision_titles ) || iscellstr( decision_titles ) %#ok<ISCLSTR>
                 decision_titles = string( decision_titles );
             end
             assert( isstring( decision_titles ) );
@@ -53,27 +54,28 @@ classdef OrientationData < handle & Saveable
             props.decision_titles = decision_titles;
             
             objective_tags = props.objective_tags;
-            if ischar( objective_tags ) || iscellstr( objective_tags )
+            if ischar( objective_tags ) || iscellstr( objective_tags ) %#ok<ISCLSTR>
                 objective_tags = string( objective_tags );
             end
             assert( isstring( objective_tags ) );
             assert( isvector( objective_tags ) );
             assert( numel( unique( objective_tags ) ) == numel( objective_tags ) );
             assert( all( ismember( objective_tags, var_names ) ) );
+            assert( isempty( intersect( decision_tags, objective_tags ) ) );
             props.objective_tags = objective_tags;
             
             objective_titles = props.objective_titles;
-            if ischar( objective_titles ) || iscellstr( objective_titles )
+            if ischar( objective_titles ) || iscellstr( objective_titles ) %#ok<ISCLSTR>
                 objective_titles = string( objective_titles );
             end
             assert( isstring( objective_titles ) );
             assert( isvector( objective_titles ) );
             assert( numel( unique( objective_titles ) ) == numel( objective_titles ) );
-            assert( numel( objective_titles ) == numel( objective_titles ) );
+            assert( numel( objective_titles ) == numel( objective_tags ) );
             props.objective_titles = objective_titles;
             
             stl_file = props.stl_file;
-            if ischar( stl_file ) || iscellstr( stl_file )
+            if ischar( stl_file ) || iscellstr( stl_file ) %#ok<ISCLSTR>
                 stl_file = string( stl_file );
             end
             assert( isstring( stl_file ) );
@@ -84,14 +86,12 @@ classdef OrientationData < handle & Saveable
             
             if ismember( "pareto_tag", pnames )
                 pareto_tag = props.pareto_tag;
-                if ischar( pareto_tag ) || iscellstr( pareto_tag )
+                if ischar( pareto_tag ) || iscellstr( pareto_tag ) %#ok<ISCLSTR>
                     pareto_tag = string( pareto_tag );
                 end
                 assert( isstring( pareto_tag ) );
                 assert( isscalar( pareto_tag ) );
                 assert( ismember( pareto_tag, var_names ) );
-
-                assert( isempty( intersect( decision_tags, objective_tags ) ) );
                 assert( isempty( intersect( pareto_tag, objective_tags ) ) );
                 assert( isempty( intersect( pareto_tag, decision_tags ) ) );
                 props.pareto_tag = pareto_tag;
@@ -100,12 +100,26 @@ classdef OrientationData < handle & Saveable
                 pareto_tag = obj.DEFAULT_PARETO_TAG;
             end
             
+            if ismember( "interp_methods", pnames )
+                interp_methods = props.interp_methods;
+                if ischar( interp_methods ) || iscellstr( interp_methods ) %#ok<ISCLSTR>
+                    interp_methods = string( interp_methods );
+                end
+                assert( isstring( interp_methods ) );
+                assert( isvector( interp_methods ) );
+                assert( numel( interp_methods ) == numel( objective_tags ) );
+                props.interp_methods = interp_methods;
+            else
+                props.interp_methods = repmat( size( objective_tags ), "linear" );
+            end
+            
             obj.data = data;
             obj.data.Properties.CustomProperties = props;
             obj.decision_tags = decision_tags;
             obj.decision_titles = decision_titles;
             obj.objective_tags = objective_tags;
             obj.objective_titles = objective_titles;
+            obj.interp_methods = interp_methods;
             obj.pareto_tag = pareto_tag;
             obj.stl_file = stl_file;
         end
@@ -127,6 +141,7 @@ classdef OrientationData < handle & Saveable
                 assert( all( sort( tcp.decision_titles ) == sort( dcp.decision_titles ) ) );
                 assert( all( sort( tcp.objective_tags ) == sort( dcp.objective_tags ) ) );
                 assert( all( sort( tcp.objective_titles ) == sort( dcp.objective_titles ) ) );
+                assert( all( tcp.interp_methods == dcp.interp_methods ) );
                 assert( tcp.stl_file == dcp.stl_file );
                 if ismember( "pareto_tag", properties( tcp ) )
                     assert( ismember( "pareto_tag", properties( dcp ) ) );
@@ -144,6 +159,11 @@ classdef OrientationData < handle & Saveable
         
         function value = get_pareto_by_tag( obj, tag )
             value = obj.data{ obj.get_pareto_front(), tag };
+        end
+        
+        function value = get_range( obj, tag )
+            value.min = min( obj.get_by_tag( tag ), [], "all" );
+            value.max = max( obj.get_by_tag( tag ), [], "all" );
         end
         
         function value = get.decision_count( obj )
