@@ -1,23 +1,18 @@
 classdef ParallelCoordinatesPlotController < handle
     
     methods ( Access = public )
-        
         function obj = ParallelCoordinatesPlotController( ...
                 parallel_coordinates_ui_axes, ...
                 orientation_data_model, ...
                 CALLBACK_HACK ... % TODO R2019a
                 )
-            
             obj.callback_hack = CALLBACK_HACK;
             obj.setup_axes( parallel_coordinates_ui_axes );
             obj.axes = parallel_coordinates_ui_axes;
             obj.model = orientation_data_model;
-            
         end
         
-        
         function update_values( obj )
-            
             obj.update_markers();
             obj.update_shaded_boxes();
             drawnow();
@@ -39,12 +34,9 @@ classdef ParallelCoordinatesPlotController < handle
             %obj.dummy_image_handle.Visible = 'off';
             obj.dummy_image_handle.ButtonDownFcn = obj.callback_hack;
             drawnow();
-            
         end
         
-        
         function update_clicked( obj, point )
-            
             %point = obj.get_axes_point(); % TODO R2019a
             objective = obj.determine_clicked_objective( point );
             if isempty( objective )
@@ -61,41 +53,30 @@ classdef ParallelCoordinatesPlotController < handle
             threshold = threshold .* ( limits( 2 ) - limits( 1 ) ) + limits( 1 );
             
             obj.model.set_threshold( objective, threshold );
-            
         end
-        
     end
     
-    
     properties ( Access = private )
-        
         axes
         parallel_coordinates_plot_above_handle
         parallel_coordinates_plot_below_handle
         marker_handles
         shaded_box_handles
         model
-        
         callback_hack % TODO R2019a
         dummy_image_handle
-        
     end
     
-    
     methods ( Access = private )
-        
         function update_markers( obj )
-            
             if ~isempty( obj.marker_handles )
                 markers = obj.marker_handles.values();
                 for i = 1 : obj.marker_handles.Count()
                     delete( markers{ i } );
                 end
             end
-            
             mhs = cell( obj.model.get_objective_count(), 1 );
             for i = 1 : obj.model.get_objective_count()
-
                 mh = plot( ...
                     obj.axes, ...
                     i, ...
@@ -107,7 +88,6 @@ classdef ParallelCoordinatesPlotController < handle
                 mh.LineWidth = 2;
                 mh.Color = 'k';
                 mhs{ i } = mh;
-
             end
             obj.marker_handles = containers.Map( ...
                 obj.model.get_objectives(), ...
@@ -119,7 +99,6 @@ classdef ParallelCoordinatesPlotController < handle
                 v( i ) = ( v( i ) - limits( i, 1 ) ) ./ ( limits( i, 2 ) - limits( i, 1 ) );
             end
             for i = 1 : obj.model.get_objective_count()
-                
                 objective = obj.model.get_objective_from_index( i );
                 mh = obj.marker_handles( objective );
                 a = obj.model.is_active( objective );
@@ -130,19 +109,14 @@ classdef ParallelCoordinatesPlotController < handle
                 else
                     mh.Visible = 'off';
                 end
-                
             end
-            
         end
         
-        
         function update_shaded_boxes( obj )
-            
             % color from http://jfly.iam.u-tokyo.ac.jp/color/#redundant2
             if isempty( obj.shaded_box_handles )
                 sbhs = cell( obj.model.get_objective_count(), 1 );
                 for i = 1 : obj.model.get_objective_count()
-                    
                     x_pos = ( i - 1 ) + 0.5;
                     sbh = patch( ...
                         obj.axes, ...
@@ -153,7 +127,6 @@ classdef ParallelCoordinatesPlotController < handle
                     sbh.FaceAlpha = 0.1;
                     sbh.EdgeColor = 'none';
                     sbhs{ i } = sbh;
-                    
                 end
                 obj.shaded_box_handles = containers.Map( ...
                     obj.model.get_objectives(), ...
@@ -161,7 +134,6 @@ classdef ParallelCoordinatesPlotController < handle
                     );
             end
             for i = 1 : obj.model.get_objective_count()
-                
                 objective = obj.model.get_objective_from_index( i );
                 sbh = obj.shaded_box_handles( objective );
                 a = obj.model.is_active( objective );
@@ -171,14 +143,10 @@ classdef ParallelCoordinatesPlotController < handle
                 else
                     sbh.Visible = 'off';
                 end
-                
             end
-            
         end
         
-        
         function update_plot( obj )
-            
             % DRAW COORDS
             % color from http://jfly.iam.u-tokyo.ac.jp/color/#redundant2
             if ~isempty( obj.parallel_coordinates_plot_above_handle )
@@ -195,7 +163,6 @@ classdef ParallelCoordinatesPlotController < handle
                 'color', [ 0.9 0.9 0.9 ] ...
                 ); % TODO Replace with parallelplot in R2019a
             obj.parallel_coordinates_plot_above_handle = pch;
-            
             if ~isempty( obj.parallel_coordinates_plot_below_handle )
                 delete( obj.parallel_coordinates_plot_below_handle );
             end
@@ -218,12 +185,9 @@ classdef ParallelCoordinatesPlotController < handle
             obj.axes.YTick = obj.axes.YLim( 1 ) : ...
                 0.1 : ...
                 obj.axes.YLim( 2 );
-            
         end
         
-        
         function objective = determine_clicked_objective( obj, point )
-            
             TOL = 0.3;
             x = point( 1 );
             bins = double( 1 : obj.model.get_objective_count() );
@@ -234,43 +198,28 @@ classdef ParallelCoordinatesPlotController < handle
             else
                 objective = obj.model.get_objective_from_index( index );
             end
-            
-            
         end
-        
         
         function value = determine_clicked_threshold( obj, point )
-            
             limits = obj.axes.YLim;
             value = interp1( limits, [ 0 1 ], point( 2 ) );
-            
         end
         
-        
         function point = get_axes_point( obj )
-            
             %             raw = obj.axes.CurrentPoint; % TODO R2019a
             %             point.x = raw( 1 );
             %             point.y = raw( 2 );
             point = [ 0 0 ];
-            
         end
-        
     end
     
-    
     methods ( Access = private, Static )
-        
         function setup_axes( axes )
-            
             %axes.Toolbar.Visible = 'off'; % TODO: R2019a
             %axes.Interactions = [];
             axes.HitTest = 'off';
-            
             hold( axes, 'on' );
-            
         end
-        
     end
     
 end

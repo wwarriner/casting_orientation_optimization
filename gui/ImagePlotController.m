@@ -1,34 +1,26 @@
 classdef ImagePlotController < handle
     
     methods ( Access = public )
-        
         function obj = ImagePlotController( ...
                 image_ui_axes, ...
                 orientation_data_model, ...
                 CALLBACK_HACK ... % TODO R2019a
                 )
-            
             obj.callback_hack = CALLBACK_HACK;
             obj.setup_axes( image_ui_axes );
             obj.axes = image_ui_axes;
             obj.model = orientation_data_model;
-            
         end
         
-        
         function update_all( obj )
-            
             obj.update_values();
             obj.update_threshold_values();
             obj.update_pareto_front();
             obj.update_global_minimum();
             obj.update_clicked();
-            
         end
         
-        
         function update_values( obj )
-            
             if isempty( obj.image_handle )
                 ih = imagesc( ...
                     obj.axes, ...
@@ -39,7 +31,6 @@ classdef ImagePlotController < handle
                 %ih.HitTest = 'off'; % TODO R2019a
                 ih.ButtonDownFcn = obj.callback_hack;
                 obj.image_handle = ih;
-                
                 grayscale_color_map = interp1( ...
                     [ 0; 1 ], ...
                     repmat( [ 0.3; 0.9 ], [ 1 3 ] ), ...
@@ -74,12 +65,9 @@ classdef ImagePlotController < handle
             %obj.dummy_image_handle.Visible = 'off';
             obj.dummy_image_handle.ButtonDownFcn = obj.callback_hack;
             drawnow();
-            
         end
         
-        
         function update_threshold_values( obj )
-            
             if isempty( obj.threshold_handle )
                 th = imagesc( ...
                     obj.axes, ...
@@ -90,7 +78,6 @@ classdef ImagePlotController < handle
                 th.HitTest = 'off';
                 obj.threshold_handle = th;
             end
-            
             if obj.model.is_single_threshold_shown()
                 obj.threshold_handle.Visible = 'on';
                 values = obj.model.get_single_threshold_values();
@@ -103,12 +90,9 @@ classdef ImagePlotController < handle
             else
                 obj.threshold_handle.Visible = 'off';
             end
-            
         end
         
-        
         function update_pareto_front( obj )
-
             % color from http://jfly.iam.u-tokyo.ac.jp/color/#redundant2
             if isempty( obj.pareto_front_above_threshold_handle )
                 pfah = plot( ...
@@ -152,12 +136,9 @@ classdef ImagePlotController < handle
                 obj.pareto_front_above_threshold_handle.Visible = 'off';
                 obj.pareto_front_below_threshold_handle.Visible = 'off';
             end
-            
         end
         
-        
         function update_global_minimum( obj )
-
             % color from http://jfly.iam.u-tokyo.ac.jp/color/#redundant2
             if isempty( obj.global_minimum_handle )
                 gmh = plot( ...
@@ -181,12 +162,9 @@ classdef ImagePlotController < handle
             else
                 obj.global_minimum_handle.Visible = 'off';
             end
-            
         end
         
-        
         function update_clicked( obj, point )
-            
             % color from http://jfly.iam.u-tokyo.ac.jp/color/#redundant2
             if isempty( obj.selected_point_handle )
                 sph = plot( ...
@@ -209,14 +187,10 @@ classdef ImagePlotController < handle
             obj.model.set_selected_angles( point );
             obj.selected_point_handle.XData = point( 1 );
             obj.selected_point_handle.YData = point( 2 );
-            
         end
-        
     end
     
-    
     properties ( Access = private )
-        
         axes
         image_handle
         colorbar_handle
@@ -229,39 +203,27 @@ classdef ImagePlotController < handle
         
         callback_hack % TODO R2019a
         dummy_image_handle
-        
     end
     
-    
     properties ( Access = private, Constant )
-        
         XLIM = [ -180 180 ];
         YLIM = [ -90 90 ];
         MAJOR_SPACING = 45;
         MINOR_SPACING = 15;
         THRESHOLD_ALPHA = 0.5;
-        
     end
     
-    
     methods ( Access = private )
-        
         function point = get_axes_point( obj )
-            
             %raw = obj.axes.CurrentPoint; % TODO R2019a
             %point.x = raw( 1 );
             %point.y = raw( 2 );
             point = [ 0 0 ];
-            
         end
-        
     end
     
-    
     methods ( Access = private, Static )
-        
         function setup_axes( axes )
-            
             %axes.Toolbar.Visible = 'off'; % TODO: R2019a
             %axes.Interactions = [];
             axes.HitTest = 'off';
@@ -277,9 +239,7 @@ classdef ImagePlotController < handle
                 axes.YLim( 2 );
                         
             hold( axes, 'on' );
-            
         end
-        
     end
     
 end

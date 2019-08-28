@@ -1,28 +1,20 @@
 classdef OrientationDataModel < handle
     
-    % constructor
-    methods ( Access = public )
-        
-        function obj = OrientationDataModel()
-            
-            obj.resolution = 300;
-            obj.selected_angles = [ 0 0 ];
-            
-        end
-        
+    properties
+        resolution_factor(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 300;
     end
     
-    
-    % setup
-    methods ( Access = public )
-        
-        function set_resolution( obj, resolution )
-            
-            assert( numel( resolution ) == 2 );
-            obj.resolution = resolution;
-            
+    methods
+        function obj = OrientationDataModel()
+            obj.resolution_factor = 300;
+            obj.selected_angles = [ 0 0 ];
         end
         
+        function set.resolution_factor( obj, value )
+            assert( numel( value ) == 2 );
+            
+            obj.resolution_factor = value;
+        end
     end
     
     
@@ -55,7 +47,7 @@ classdef OrientationDataModel < handle
             
             % load response data
             loader = DataLoader();
-            loader.load( data_file_path, obj.resolution );
+            loader.load( data_file_path, obj.resolution_factor );
             new_response_data = loader.get_response_data();
             
             % setup active objectives
@@ -553,7 +545,7 @@ classdef OrientationDataModel < handle
     
     properties ( Access = private )
         
-        resolution
+        resolution_factor
         response_data
         visualization_generator
         
