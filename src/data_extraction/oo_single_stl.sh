@@ -12,7 +12,10 @@ CGT_DIR=$REPOS_DIR'/casting_geometric_toolsuite'
 
 # Orientation Optimization Analysis
 COO_DIR=$REPOS_DIR'/casting_orientation_optimization'
-SETTINGS_FILE=$COO_DIR'/src/data_extraction/extraction_settings.json'
+DATA_EXTRACTION_DIR=$COO_DIR'/src/data_extraction'
+SETTINGS_FILE=$DATA_EXTRACTION_DIR'/extraction_settings.json'
+ANGLES_FILE=$DATA_EXTRACTION_DIR'/sphere_angles.csv'
+ANGLES_COUNT=$(( $( wc -l < $ANGLES_FILE ) -1 ))
 
 BASE_CASE_PATH=$ROOT_DIR'/oo_data/'$COMPONENT_NAME'_base_case.mat'
 
@@ -24,12 +27,9 @@ mkdir -p $OUTPUT_PATH
 # MATLAB
 RECIPE_CLASS='DefaultRecipe'
 RUN_CMD='addpath( genpath( '\'$CGT_DIR\'' ) );addpath( genpath( '\'$COO_DIR\'' ) );generate_data_on_hpc( '\'$BASE_CASE_PATH\'', '\'$RECIPE_CLASS\'', [$ANGLES], $SLURM_ARRAY_TASK_ID, $SLURM_ARRAY_JOB_ID, '\'$OUTPUT_PATH\'' );exit;'
-printf "%s\n" $FULL_CMD
 
-CSV_NAME='sphere_angles.csv'
-CSV_PATH=$ROOT_DIR'/'$CSV_NAME
 NAME=oo_project
-ARRAYMAX=$(( $( wc -l < $CSV_PATH ) -1 ))
+ARRAYMAX=$ANGLES_COUNT
 MAXTASKS=256
 TASKS=1
 MEMORY='20GB'
@@ -42,7 +42,7 @@ MAILADDRESS='wwarr@uab.edu'
 sbatch --array=0-$ARRAYMAX%$MAXTASKS --job-name $NAME --output=$ROOT_DIR/output/output_%A_%a.txt --ntasks=$TASKS --mem-per-cpu=$MEMORY --time=$TIME --partition=$PARTITION --mail-type=$MAILTYPE --mail-user=$MAILADDRESS <<LIMITING_STRING
 #!/bin/bash
 module load rc/matlab/R2019a
-ANGLES=\$( sed \$(( \$SLURM_ARRAY_TASK_ID+1 ))'q;d' $CSV_PATH )
+ANGLES=\$( sed \$(( \$SLURM_ARRAY_TASK_ID+1 ))'q;d' $ANGLES_FILE )
 echo "\$ANGLES"
 matlab -nodesktop -nodisplay -sd "$REPOS_DIR" -r "$RUN_CMD"
 LIMITING_STRING

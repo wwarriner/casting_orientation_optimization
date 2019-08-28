@@ -8,11 +8,10 @@ STL_FOLDER_PATH=$ROOT_DIR'/oo_stl'
 shopt -s nocaseglob
 STL_PATHS=()
 for filename in $STL_FOLDER_PATH/*.stl; do
-    echo "$filename"
+    printf "%s\n" $filename
 	STL_PATHS+=("$filename")
 done
 STL_PATH_COUNT=${#STL_PATHS[@]}
-
 
 REPOS_DIR=$ROOT_DIR'/repos'
 OUTPUT_DIR=$ROOT_DIR'/oo_data'
@@ -26,7 +25,6 @@ SETTINGS_FILE=$COO_DIR'/src/data_extraction/extraction_settings.json'
 
 # MATLAB
 RUN_CMD='addpath( genpath( '\'$CGT_DIR\'' ) );addpath( genpath( '\'$COO_DIR\'' ) );generate_base_case_data( '\'$SETTINGS_FILE\'', '\''$STL_PATH'\'', '\'$OUTPUT_DIR\'' );exit;'
-printf "%s\n" $FULL_CMD
 
 NAME=oo_project
 ARRAYMAX=$(( array_max=$STL_PATH_COUNT-1 ))
@@ -35,7 +33,6 @@ TASKS=1
 MEMORY='20GB'
 TIME=2:00:00
 PARTITION=express
-PARTITION=short
 MAILTYPE=FAIL
 MAILADDRESS='wwarr@uab.edu'
 
