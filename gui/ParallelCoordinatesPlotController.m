@@ -12,17 +12,29 @@ classdef ParallelCoordinatesPlotController < handle
             obj.model = orientation_data_model;
         end
         
-        function update_values( obj )
-            obj.update_markers();
+        function update_minimal( obj )
             obj.update_shaded_boxes();
+            obj.update_markers();
             drawnow();
+        end
+        
+        function update_lines( obj )
+            obj.update_minimal();
+            obj.update_line_colors();
+            obj.update_markers();
+            drawnow();
+        end
+        
+        function update_values( obj )
+            obj.update_minimal();
             obj.update_plot();
+            obj.update_line_colors();
             obj.update_markers();
             drawnow();
             
             % HACK FIX R2019a
             if ~isempty( obj.dummy_image_handle )
-                delete( obj.dummy_image_handle )
+                delete( obj.dummy_image_handle );
             end
             obj.dummy_image_handle = image( ...
                 obj.axes, ...
@@ -34,6 +46,15 @@ classdef ParallelCoordinatesPlotController < handle
             %obj.dummy_image_handle.Visible = 'off';
             obj.dummy_image_handle.ButtonDownFcn = obj.callback_hack;
             drawnow();
+        end
+        
+        function reset_plot( obj )
+            if ~isempty( obj.pch )
+                delete( obj.pch );
+            end
+            obj.pch = [];
+            obj.last_below = [];
+            obj.last_above = [];
         end
         
         function update_clicked( obj, point )
@@ -59,6 +80,8 @@ classdef ParallelCoordinatesPlotController < handle
     properties ( Access = private )
         axes
         pch
+        last_below
+        last_above
         parallel_coordinates_plot_above_handle
         parallel_coordinates_plot_below_handle
         marker_handles
@@ -147,6 +170,35 @@ classdef ParallelCoordinatesPlotController < handle
             end
         end
         
+        function update_line_colors( obj )
+            % TODO this is the culprit
+            tic;
+            below = obj.model.select_pareto_front_below();
+            toc;
+            if ~isempty( obj.last_below )
+                below = below & ~obj.last_below;
+            end
+            inds = find( below );
+            for i = 1 : numel( inds )
+                h = obj.pch( inds( i ) );
+                h.Color = obj.ORANGE;
+            end
+            obj.last_below = below;
+            
+            tic;
+            above = ~obj.model.select_pareto_front_below();
+            if ~isempty( obj.last_above )
+                above = above & ~obj.last_above;
+            end
+            inds = find( above );
+            toc;
+            for i = 1 : numel( inds )
+                h = obj.pch( inds( i ) );
+                h.Color = obj.GRAY;
+            end
+            obj.last_above = above;
+        end
+        
         function update_plot( obj )
             limits = obj.model.get_all_data_limits().';
             v = obj.model.get_all_pareto_front_values();
@@ -158,17 +210,9 @@ classdef ParallelCoordinatesPlotController < handle
                     'color', obj.GRAY ...
                     );
             end
-            below = find( obj.model.select_pareto_front_below() );
-            for i = 1 : numel( below )
-                h = obj.pch( below( i ) );
-                h.Color = obj.ORANGE;
-                h.YData = v( below( i ), : );
-            end
-            above = find( ~obj.model.select_pareto_front_below() );
-            for i = 1 : numel( above )
-                h = obj.pch( above( i ) );
-                h.Color = obj.GRAY;
-                h.YData = v( above( i ), : );
+            for i = 1 : numel( obj.pch )
+                h = obj.pch( i );
+                h.YData = v( i, : );
             end
                         
             % RESET AXES
