@@ -1,5 +1,5 @@
 %% SETUP
-name = 'steering_column_mount';
+name = 'base_plate';
 ood_file = fullfile( 'D:\wwarr', name, [ name '.ood' ] );
 resolution = 300;
 output_root_folder = 'C:\Users\wwarr\Desktop\images';
@@ -41,7 +41,7 @@ axh.YAxis.MinorTickValues = ylim( 1 ) : spacing : ylim( 2 );
 axh.XMinorTick = 'on';
 axh.YMinorTick = 'on';
 axh.DataAspectRatio = [ range( xlim ) range( xlim ) 1 ];
-axh.Colormap = interp1( [ 0; 1 ], repmat( [ 0.3; 0.9 ], [ 1 3 ] ), linspace( 0, 1, 256 ) );
+axh.Colormap = flipud( interp1( [ 0; 1 ], repmat( [ 0.3; 0.9 ], [ 1 3 ] ), linspace( 0, 1, 256 ) ) );
 cbh = colorbar( axh );
 cbh.Location = 'eastoutside';
 hold( axh, 'on' );
