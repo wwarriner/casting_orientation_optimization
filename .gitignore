@@ -3,3 +3,4 @@
 *.asv
 hpc/test/output/*.csv
 hpc/test/output/*.mat
+src/data_extraction/test/output/
