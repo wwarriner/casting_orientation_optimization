@@ -101,6 +101,7 @@ classdef DefaultRecipe < OrientationRecipeInterface
             
             t = map2table( p );
             interp = i.values();
+            interp = [ interp{ : } ];
         end
     end
     

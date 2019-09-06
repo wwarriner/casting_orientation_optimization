@@ -102,6 +102,9 @@ classdef OrientationData < handle & Saveable
             
             if ismember( "interp_methods", pnames )
                 interp_methods = props.interp_methods;
+                if iscell( interp_methods ) && ~iscellstr( interp_methods )
+                    interp_methods = [ interp_methods{ : } ];
+                end
                 if ischar( interp_methods ) || iscellstr( interp_methods ) %#ok<ISCLSTR>
                     interp_methods = string( interp_methods );
                 end
