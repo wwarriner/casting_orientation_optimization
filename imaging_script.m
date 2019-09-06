@@ -1,8 +1,32 @@
 %% SETUP
-name = 'base_plate';
-ood_file = fullfile( 'D:\wwarr', name, [ name '.ood' ] );
-resolution = 300;
-output_root_folder = 'C:\Users\wwarr\Desktop\images';
+oo_data_folder = "C:\Users\wwarr\Desktop\oo_data";
+contents = get_contents( oo_data_folder );
+contents = get_files_with_extension( contents, ".mat" );
+files = string( get_full_paths( contents ) );
+
+oo_results_folder = "C:\Users\wwarr\Desktop\oo_results";
+contents = get_contents( oo_results_folder );
+folders = get_full_paths( contents );
+subfolders = contents.name;
+
+RESOLUTION = 300;
+OUTPUT_FOLDER = "C:\Users\wwarr\Desktop\images";
+
+%% LOAD
+for i = 1 : numel( files )
+
+file = files( i );
+[ folder, name, ext ] = fileparts( file );
+name = replace( name, "_base_case", "" );
+j = find( startsWith( subfolders, name ) );
+folder = folders( j );
+ood_file = fullfile( folder, name + ".ood" );
+ood = OrientationData.load_obj( ood_file );
+gd = GriddedData( ood, RESOLUTION );
+
+output_folder = 
+
+end
 
 %% LOAD RESPONSE DATA
 dl = DataLoader();
