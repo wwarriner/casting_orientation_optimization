@@ -1,6 +1,6 @@
 classdef PointDisplayController < handle
     
-    methods ( Access = public )
+    methods
         function obj = PointDisplayController( ...
                 pareto_front_check_box, ...
                 global_minimum_check_box, ...
@@ -67,7 +67,13 @@ classdef PointDisplayController < handle
             data.value = obj.model.get_value();
         end
         
-        function text = format_text( obj, point_data )
+        function set_selected_point_text( obj, text )
+            obj.selected_point_text_area.Value = text;
+        end
+    end
+    
+    methods ( Access = private, Static )
+        function text = format_text( point_data )
             NUMERIC_FORMAT = '%.3g';
             format = [ ...
                 'Selected point:' newline ...
@@ -81,10 +87,6 @@ classdef PointDisplayController < handle
                 point_data.angles( 2 ), ...
                 point_data.value ...
                 );
-        end
-        
-        function set_selected_point_text( obj, text )
-            obj.selected_point_text_area.Value = text;
         end
     end
     

@@ -227,17 +227,14 @@ classdef ImagePlotController < handle
             %axes.Toolbar.Visible = 'off'; % TODO: R2019a
             %axes.Interactions = [];
             axes.HitTest = 'off';
-            
             %axes.XTickFormat = [ '%.0f' degree_symbol() ];
             % TODO when available
             axes.XAxis.MinorTickValues = axes.XLim( 1 ) : ...
                 ImagePlotController.MINOR_SPACING : ...
                 axes.XLim( 2 );
-            
             axes.YAxis.MinorTickValues = axes.YLim( 1 ) : ...
                 ImagePlotController.MINOR_SPACING : ...
                 axes.YLim( 2 );
-                        
             hold( axes, 'on' );
         end
     end
