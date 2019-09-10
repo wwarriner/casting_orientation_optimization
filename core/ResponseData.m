@@ -1,5 +1,9 @@
 classdef ResponseData < handle
     
+    properties ( SetAccess = private )
+        pareto_quantiles(:,:) double {mustBeReal,mustBeFinite}
+    end
+    
     properties ( SetAccess = private, Dependent )
         name(1,1) string
         count(1,1) string
@@ -7,6 +11,7 @@ classdef ResponseData < handle
         tags(1,:) string
         pareto_front_count(1,1) double {mustBeReal,mustBeFinite,mustBePositive}
         pareto_front(:,:) double {mustBeReal,mustBeFinite}
+        pareto_objectives(:,:) double {mustBeReal,mustBeFinite}
     end
     
     % all expect radians
@@ -18,10 +23,16 @@ classdef ResponseData < handle
                 orientation_data.objectives, ...
                 orientation_data.objective_tags ...
                 );
+            pareto_quantiles = obj.compute_pareto_quantiles( ...
+                gridded_data, ...
+                orientation_data.pareto_objectives, ...
+                orientation_data.objective_tags ...
+                );
             
             obj.orientation_data = orientation_data;
             obj.gridded_data = gridded_data;
             obj.minima = minima;
+            obj.pareto_quantiles = pareto_quantiles;
         end
         
         function value = get.name( obj )
@@ -46,6 +57,10 @@ classdef ResponseData < handle
         
         function value = get.pareto_front( obj )
             value = obj.orientation_data.pareto_decisions;
+        end
+        
+        function value = get.pareto_objectives( obj )
+            value = obj.orientation_data.pareto_objectives;
         end
         
         function values = get_objective_values( obj, tag )
@@ -104,6 +119,18 @@ classdef ResponseData < handle
                 angles = decisions( index, : );
                 angles = constrain_unit_sphere_angles( angles );
                 minima( tags( i ) ) = angles;
+            end
+        end
+        
+        function pareto = compute_pareto_quantiles( ...
+                gridded_data, ...
+                pareto_objectives, ...
+                objective_tags ...
+                )
+            pareto = pareto_objectives;
+            for i = 1 : numel( objective_tags )
+                tag = objective_tags( i );
+                pareto( :, i ) = gridded_data.to_quantile( pareto( :, i ), tag );
             end
         end
     end

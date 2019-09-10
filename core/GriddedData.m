@@ -114,6 +114,7 @@ classdef GriddedData < handle
         values containers.Map
         quantiles containers.Map
         quantile_interps containers.Map
+        pareto_quantiles(:,:) double
     end
     
     methods ( Access = private, Static )

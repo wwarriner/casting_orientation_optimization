@@ -19,16 +19,16 @@ classdef ParallelCoordinatesPlotController < handle
         end
         
         function update_lines( obj )
-            obj.update_minimal();
             obj.update_line_colors();
+            obj.update_shaded_boxes();
             obj.update_markers();
             drawnow();
         end
         
         function update_values( obj )
-            obj.update_minimal();
             obj.update_plot();
             obj.update_line_colors();
+            obj.update_shaded_boxes();
             obj.update_markers();
             drawnow();
             
@@ -52,7 +52,26 @@ classdef ParallelCoordinatesPlotController < handle
             if ~isempty( obj.pch )
                 delete( obj.pch );
             end
+            if ~isempty( obj.marker_handles )
+                v = obj.marker_handles.values();
+                for i = 1 : numel( v )
+                    delete( v{ i } );
+                end
+                delete( obj.marker_handles );
+            end
+            if ~isempty( obj.shaded_box_handles )
+                v = obj.shaded_box_handles.values();
+                for i = 1 : numel( v )
+                    delete( v{ i } );
+                end
+                delete( obj.shaded_box_handles );
+            end
+            if ~isempty( obj.dummy_image_handle )
+                delete( obj.dummy_image_handle );
+            end
             obj.pch = [];
+            obj.marker_handles = [];
+            obj.shaded_box_handles = [];
             obj.last_below = [];
             obj.last_above = [];
         end
@@ -82,8 +101,6 @@ classdef ParallelCoordinatesPlotController < handle
         pch
         last_below
         last_above
-        parallel_coordinates_plot_above_handle
-        parallel_coordinates_plot_below_handle
         marker_handles
         shaded_box_handles
         model
@@ -171,32 +188,33 @@ classdef ParallelCoordinatesPlotController < handle
         end
         
         function update_line_colors( obj )
-            % TODO this is the culprit
-            tic;
             below = obj.model.select_pareto_front_below();
-            toc;
-            if ~isempty( obj.last_below )
-                below = below & ~obj.last_below;
-            end
-            inds = find( below );
-            for i = 1 : numel( inds )
-                h = obj.pch( inds( i ) );
+%             if ~isempty( obj.last_below )
+%                 below = below & ~obj.last_below;
+%             end
+            on_top_inds = find( below );
+            for i = 1 : numel( on_top_inds )
+                h = obj.pch( on_top_inds( i ) );
                 h.Color = obj.ORANGE;
             end
-            obj.last_below = below;
+%             obj.last_below = below;
             
-            tic;
-            above = ~obj.model.select_pareto_front_below();
-            if ~isempty( obj.last_above )
-                above = above & ~obj.last_above;
-            end
-            inds = find( above );
-            toc;
-            for i = 1 : numel( inds )
-                h = obj.pch( inds( i ) );
+            above = ~below;
+%             if ~isempty( obj.last_above )
+%                 above = above & ~obj.last_above;
+%             end
+            on_bottom_inds = find( above );
+            for i = 1 : numel( on_bottom_inds )
+                h = obj.pch( on_bottom_inds( i ) );
                 h.Color = obj.GRAY;
             end
-            obj.last_above = above;
+%             obj.last_above = above;
+            
+            start = numel( obj.axes.Children ) - numel( obj.pch ) + 1;
+            unchanged_inds = setdiff( 1 : numel( obj.pch ), [ on_top_inds; on_bottom_inds ] ).';
+            order = [ on_top_inds; unchanged_inds; on_bottom_inds ];
+            %order = order + start - 1;
+            obj.axes.Children( start : end ) = obj.pch( order );
         end
         
         function update_plot( obj )
@@ -218,7 +236,6 @@ classdef ParallelCoordinatesPlotController < handle
             % RESET AXES
             obj.axes.XTick = 1 : obj.model.get_objective_count();
             obj.axes.XLim = [ 0.5 obj.model.get_objective_count() + 0.5 ];
-            
             obj.axes.YLim = [ 0 1 ];
             obj.axes.YTick = obj.axes.YLim( 1 ) : 0.1 : obj.axes.YLim( 2 );
         end
@@ -260,6 +277,8 @@ classdef ParallelCoordinatesPlotController < handle
             %axes.Interactions = [];
             axes.HitTest = 'off';
             hold( axes, 'on' );
+            axes.Clipping = "off";
+            %axes.SortMethod = "childorder";
         end
     end
     

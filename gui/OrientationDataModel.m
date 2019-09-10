@@ -97,14 +97,20 @@ classdef OrientationDataModel < handle
         end
     end
     
-    properties ( Access = public )
-        values_mode = 'values';
-        quantiles_mode = 'quantiles';
+    properties
+        mode
     end
     
-    methods ( Access = public )
-        function set_mode( obj, mode )
-            obj.mode = mode;
+    properties ( Constant )
+        values_mode = "values";
+        quantiles_mode = "quantiles";
+    end
+    
+    methods
+        function set.mode( obj, value )
+            assert( ismember( value, [ obj.values_mode obj.quantiles_mode ] ) );
+            
+            obj.mode = value;
         end
     end
     
@@ -219,22 +225,6 @@ classdef OrientationDataModel < handle
             values = obj.select_all_pareto_front_values();
         end
         
-        function value = get_pareto_indices_above( obj )
-            value = find( ~obj.select_pareto_front_below() );
-        end
-        
-        function value = get_pareto_indices_below( obj )
-            value = find( obj.select_pareto_front_below() );
-        end
-        
-        function values = get_all_pareto_front_values_above_threshold( obj )
-        end
-        
-        function values = get_all_pareto_front_values_below_threshold( obj )
-            values = obj.select_all_pareto_front_values();
-            values( ~obj.select_pareto_front_below(), : ) = [];
-        end
-        
         function points = get_pareto_front_above_threshold( obj )
             points = obj.get_pareto_front();
             points( obj.select_pareto_front_below(), : ) = [];
@@ -246,15 +236,7 @@ classdef OrientationDataModel < handle
         end
         
         function limits = get_data_limits( obj, objective )
-            switch obj.mode
-                case obj.values_mode
-                    range = obj.response_data.get_objective_value_range( objective );
-                    limits = [ range.min range.max ];
-                case obj.quantiles_mode
-                    limits = [ 0 1 ];
-                otherwise
-                    assert( false )
-            end
+            limits = obj.select_threshold( objective ).range;
         end
         
         function limits = get_all_data_limits( obj )
@@ -383,7 +365,6 @@ classdef OrientationDataModel < handle
     properties ( Access = private )
         response_data
         visualization_generator
-        mode
         view_setting
         selected_objective
         show_pareto
@@ -470,15 +451,13 @@ classdef OrientationDataModel < handle
         end
         
         function below = is_pareto_front_feasible( obj )
-            below = true( obj.response_data.pareto_front_count, 1 );
-            for i = 1 : obj.get_objective_count()
-                v = obj.get_objective_from_index( i );
-                if ~obj.is_active( v )
-                    continue;
-                end
-                below = below & ...
-                    obj.is_pareto_front_below_single_threshold( v );
+            t = obj.quantile_thresholds.values();
+            v = zeros( size( t ) );
+            for i = 1 : numel( t )
+                v( i ) = t{ i }.value();
             end
+            values = obj.response_data.pareto_quantiles;
+            below = all( values <= v, 2 );
         end
         
         function below = is_pareto_front_below_single_threshold( obj, tag )

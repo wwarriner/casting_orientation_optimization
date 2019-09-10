@@ -10,7 +10,7 @@ classdef DataModeController < handle
         end
         
         function update( obj )
-            obj.model.set_mode( obj.get_selected_tag() );
+            obj.model.mode = obj.get_selected_tag();
         end
     end
     
