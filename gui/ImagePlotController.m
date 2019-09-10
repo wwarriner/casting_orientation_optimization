@@ -78,7 +78,7 @@ classdef ImagePlotController < handle
                 th.HitTest = 'off';
                 obj.threshold_handle = th;
             end
-            if obj.model.is_single_threshold_shown()
+            if obj.model.show_threshold
                 obj.threshold_handle.Visible = 'on';
                 values = obj.model.get_single_threshold_values();
                 obj.threshold_handle.CData = repmat( ...
@@ -122,14 +122,14 @@ classdef ImagePlotController < handle
                 obj.pareto_front_below_threshold_handle = pfbh;
             end
             
-            if obj.model.is_pareto_front_shown()
+            if obj.model.show_pareto_front
                 obj.pareto_front_above_threshold_handle.Visible = 'on';
-                above = obj.model.get_pareto_front_above_threshold();
+                above = obj.model.pareto_decisions_above_tag_threshold;
                 obj.pareto_front_above_threshold_handle.XData = above( :, 1 );
                 obj.pareto_front_above_threshold_handle.YData = above( :, 2 );
                 
                 obj.pareto_front_below_threshold_handle.Visible = 'on';
-                below = obj.model.get_pareto_front_below_threshold();
+                below = obj.model.pareto_decisions_below_tag_threshold;
                 obj.pareto_front_below_threshold_handle.XData = below( :, 1 );
                 obj.pareto_front_below_threshold_handle.YData = below( :, 2 );
             else
@@ -154,9 +154,9 @@ classdef ImagePlotController < handle
                 obj.global_minimum_handle = gmh;
             end
             
-            if obj.model.is_global_minimum_shown()
+            if obj.model.show_global_minimum
                 obj.global_minimum_handle.Visible = 'on';
-                point = obj.model.get_current_global_minimum_point();
+                point = obj.model.global_minimum;
                 obj.global_minimum_handle.XData = point( 1 );
                 obj.global_minimum_handle.YData = point( 2 );
             else
@@ -184,7 +184,7 @@ classdef ImagePlotController < handle
             if nargin < 2
                 point = obj.model.get_selected_point_angles_in_degrees();
             end
-            obj.model.set_selected_angles( point );
+            obj.model.selected_angles = point;
             obj.selected_point_handle.XData = point( 1 );
             obj.selected_point_handle.YData = point( 2 );
         end

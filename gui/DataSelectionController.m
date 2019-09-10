@@ -14,7 +14,7 @@ classdef DataSelectionController < handle
         end
         
         function set_drop_down_items( obj )
-            obj.objective_drop_down.Items = obj.model.get_tags();
+            obj.objective_drop_down.Items = obj.model.tags;
         end
         
         function update_all( obj )
@@ -24,9 +24,8 @@ classdef DataSelectionController < handle
         end
         
         function update_view_selection( obj )
-            view = obj.get_view_tag();
-            obj.model.set_view( view );
-            if strcmpi( view, obj.model.single_view )
+            obj.model.view = obj.get_view_tag();
+            if obj.model.single_view_selected
                 obj.enable_single_widgets();
             else
                 obj.disable_single_widgets();
@@ -34,13 +33,11 @@ classdef DataSelectionController < handle
         end
         
         function update_objective_selection( obj )
-            objective = obj.get_selected_objective();
-            obj.model.set_selected_objective( objective );
+            obj.model.selected_tag = obj.get_selected_objective();
         end
         
         function update_threshold_check_box( obj )
-            do_apply = obj.is_threshold_check_box_selected();
-            obj.model.apply_threshold_to_single_view( do_apply );
+            obj.model.show_threshold = obj.is_threshold_check_box_selected();
         end
     end
     
@@ -68,6 +65,9 @@ classdef DataSelectionController < handle
         
         function objective = get_selected_objective( obj )
             objective = obj.objective_drop_down.Value;
+            if isempty( objective )
+                objective = "";
+            end
         end
         
         function selected = is_threshold_check_box_selected( obj )

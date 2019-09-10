@@ -2,24 +2,46 @@ classdef OrientationDataModel < handle
     
     properties
         resolution_factor(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 300;
+        mode(1,1) string = OrientationDataModel.VALUES_MODE
+        view(1,1) string = OrientationDataModel.SINGLE_VIEW
+        show_pareto_front(1,1) logical
+        show_global_minimum(1,1) logical
+        show_threshold(1,1) logical
+        selected_angles(1,2) double {mustBeReal,mustBeFinite}
+        selected_tag(1,1) string
+    end
+    
+    properties ( Constant )
+        VALUES_MODE = "values";
+        QUANTILES_MODE = "quantiles";
+        SINGLE_VIEW = "single";
+        FEASIBILITY_VIEW = "feasibility";
     end
     
     properties ( SetAccess = private )
         name(1,1) string
     end
     
+    properties ( SetAccess = private, Dependent )
+        ready(1,1) logical
+        modes(:,1) string
+        views(:,1) string
+        tags(:,1) string
+        single_view_selected(1,1) logical
+        single_view_threshold_relevant(1,1) logical
+        global_minimum_relevant(1,1) logical
+        global_minimum(1,2) double
+        pareto_objectives(:,:) double
+        pareto_below(:,1) logical
+        pareto_decisions_above_tag_threshold(:,2) double
+        pareto_decisions_below_tag_threshold(:,2) double
+        objectives(:,:) double
+    end
+    
     methods
         function obj = OrientationDataModel()
             obj.resolution_factor = 300;
             obj.selected_angles = [ 0 0 ];
-        end
-    end
-    
-    
-    % file operations
-    methods ( Access = public )
-        function ready = is_ready( obj )
-            ready = ~isempty( obj.response_data );
         end
         
         function canceled = load( obj, root_path )
@@ -77,7 +99,7 @@ classdef OrientationDataModel < handle
                 );
             
             if ~isempty( obj.response_data )
-                old_tags = sort( obj.get_tags() );
+                old_tags = sort( obj.tags );
                 for i = 1 : new_count
                     new_tag = new_tags( i );
                     if ismember( new_tag, old_tags )
@@ -95,82 +117,7 @@ classdef OrientationDataModel < handle
             obj.response_data = new_data;
             % TODO vis generator
         end
-    end
-    
-    properties
-        mode
-    end
-    
-    properties ( Constant )
-        values_mode = "values";
-        quantiles_mode = "quantiles";
-    end
-    
-    methods
-        function set.mode( obj, value )
-            assert( ismember( value, [ obj.values_mode obj.quantiles_mode ] ) );
-            
-            obj.mode = value;
-        end
-    end
-    
-    properties ( Access = public )
-        single_view = 'single';
-        feasibility_view = 'feasibility';
-    end
-    
-    methods ( Access = public )
-        function set_view( obj, view )
-            obj.view_setting = view;
-        end
         
-        function set_selected_objective( obj, objective )
-            obj.selected_objective = objective;
-        end
-        
-        function apply_threshold_to_single_view( obj, do_apply )
-            obj.show_single_threshold = do_apply;
-        end
-    end
-    
-    methods ( Access = public )
-        function show_pareto_front( obj, do_show )
-            obj.show_pareto = do_show;
-        end
-        
-        function show_global_minimum( obj, do_show )
-            obj.show_minimum = do_show;
-        end
-        
-        function set_selected_angles( obj, angles )
-            obj.selected_angles = angles;
-        end
-    end
-    
-    methods ( Access = public )
-        function set_threshold( obj, objective, value )
-            switch obj.mode
-                case obj.values_mode
-                    threshold = obj.value_thresholds( objective );
-                case obj.quantiles_mode
-                    threshold = obj.quantile_thresholds( objective );
-                otherwise
-                    assert( false )
-            end
-            threshold.update( value );
-        end
-        
-        function set_threshold_by_index( obj, objective_index, value )
-            v = obj.get_objective_from_index( objective_index );
-            obj.set_threshold( v, value );
-        end
-        
-        function set_active_state( obj, objective, is_active )
-            obj.active_tags( objective ) = is_active;
-        end
-    end
-    
-    methods ( Access = public )
         function visualize( obj )
             % TODO update this to use uifigure/uiaxes when rotation tools avail
             fh = figure();
@@ -198,45 +145,129 @@ classdef OrientationDataModel < handle
             obj.visualization_generator.draw( axh, obj.get_selected_point_angles_in_radians() );
         end
         
-        function objectives = get_tags( obj )
-            objectives = obj.response_data.tags;
+        function set.mode( obj, value )
+            assert( ismember( value, obj.modes ) ); %#ok<MCSUP>
+            obj.mode = value;
         end
         
-        function relevant = is_global_minimum_relevant( obj )
-            switch obj.view_setting
-                case obj.single_view
-                    relevant = true;
-                case obj.feasibility_view
-                    relevant = false;
+        function set.view( obj, value )
+            assert( ismember( value, obj.views ) ); %#ok<MCSUP>
+            obj.view = value;
+        end
+        
+        function set.selected_tag( obj, tag )
+            assert( ismember( tag, obj.tags ) || tag == "" ); %#ok<MCSUP>
+            if tag == ""
+                obj.valid_selected_tag = false; %#ok<MCSUP>
+            else
+                obj.valid_selected_tag = true; %#ok<MCSUP>
+            end
+            obj.selected_tag = tag;
+        end
+        
+        function value = get.show_global_minimum( obj )
+            if obj.global_minimum_relevant
+                value = obj.show_global_minimum;
+            else
+                value = false;
+            end
+        end
+        
+        function set_threshold( obj, tag, value )
+            switch obj.mode
+                case obj.VALUES_MODE
+                    threshold = obj.value_thresholds( tag );
+                case obj.QUANTILES_MODE
+                    threshold = obj.quantile_thresholds( tag );
+                otherwise
+                    assert( false )
+            end
+            threshold.update( value );
+        end
+        
+        function set_active_state( obj, tag, is_active )
+            obj.active_tags( tag ) = is_active;
+        end
+        
+        function value = get.ready( obj )
+            value = ~isempty( obj.response_data );
+        end
+        
+        function value = get.modes( obj )
+            value = [ obj.VALUES_MODE obj.QUANTILES_MODE ];
+        end
+        
+        function value = get.views( obj )
+            value = [ obj.SINGLE_VIEW obj.FEASIBILITY_VIEW ];
+        end
+        
+        function value = get.single_view_selected( obj )
+            value = obj.view == obj.SINGLE_VIEW;
+        end
+        
+        function value = get.show_threshold( obj )
+            if obj.view == obj.SINGLE_VIEW
+                value = obj.show_threshold;
+            else
+                value = false;
+            end
+        end
+        
+        function value = get.tags( obj )
+            if obj.ready
+                value = obj.response_data.tags;
+            else
+                value = "";
+            end
+        end
+        
+        function value = get.global_minimum( obj )
+            if ~obj.valid_selected_tag
+                value = [ 0 0 ];
+            else
+                value = obj.response_data.get_minimum( obj.selected_tag );
+            end
+        end
+        
+        function value = get.pareto_objectives( obj )
+            value = nan( ...
+                obj.response_data.pareto_front_count, ...
+                obj.get_objective_count() ...
+                );
+            for i = 1 : obj.get_objective_count()
+                value( :, i ) = obj.select_pareto_objectives( ...
+                    obj.get_objective_from_index( i ) ...
+                    );
+            end
+        end
+        
+        function value = get.pareto_below( obj )
+            value = obj.is_pareto_front_below();
+        end
+        
+        function points = get.pareto_decisions_above_tag_threshold( obj )
+            points = obj.select_pareto_decisions();
+            points( obj.is_pareto_front_below(), : ) = [];
+        end
+        
+        function points = get.pareto_decisions_below_tag_threshold( obj )
+            points = obj.select_pareto_decisions();
+            points( ~obj.is_pareto_front_below(), : ) = [];
+        end
+        
+        function value = get.global_minimum_relevant( obj )
+            switch obj.view
+                case obj.SINGLE_VIEW
+                    value = true;
+                case obj.FEASIBILITY_VIEW
+                    value = false;
                 otherwise
                     assert( false )
             end
         end
         
-        function is = is_pareto_front_shown( obj )
-            is = obj.show_pareto;
-        end
-        
-        function points = get_pareto_front( obj )
-            points = rad2deg( obj.response_data.pareto_front );
-        end
-        
-        function values = get_all_pareto_front_values( obj )
-            values = obj.select_all_pareto_front_values();
-        end
-        
-        function points = get_pareto_front_above_threshold( obj )
-            points = obj.get_pareto_front();
-            points( obj.select_pareto_front_below(), : ) = [];
-        end
-        
-        function points = get_pareto_front_below_threshold( obj )
-            points = obj.get_pareto_front();
-            points( ~obj.select_pareto_front_below(), : ) = [];
-        end
-        
-        function limits = get_data_limits( obj, objective )
-            limits = obj.select_threshold( objective ).range;
+        function limits = get_data_limits( obj, tag )
+            limits = obj.select_threshold( tag ).range;
         end
         
         function limits = get_all_data_limits( obj )
@@ -247,56 +278,44 @@ classdef OrientationDataModel < handle
             assert( ~any( isnan( limits ), 'all' ) );
         end
         
-        function is = is_global_minimum_shown( obj )
-            if strcmpi( obj.view_setting, obj.single_view )
-                is = obj.show_minimum;
-            else
-                is = false;
-            end
-        end
-        
-        function point = get_current_global_minimum_point( obj )
-            point = obj.response_data.get_minimum( obj.selected_objective );
-        end
-        
-        function is = is_single_threshold_shown( obj )
-            if strcmpi( obj.view_setting, obj.single_view )
-                is = obj.show_single_threshold;
-            else
-                is = false;
-            end
-        end
-        
-        function enabled = is_enabled( obj, objective )
-            switch obj.view_setting
-                case obj.single_view
-                    enabled = strcmpi( obj.selected_objective, objective );
-                case obj.feasibility_view
+        function enabled = is_enabled( obj, tag )
+            switch obj.view
+                case obj.SINGLE_VIEW
+                    enabled = obj.selected_objective == tag;
+                case obj.FEASIBILITY_VIEW
                     enabled = true;
                 otherwise
                     assert( false );
             end
         end
         
-        function active = is_active( obj, objective )
-            switch obj.view_setting
-                case obj.single_view
-                    active = strcmpi( obj.selected_objective, objective );
-                case obj.feasibility_view
-                    active = obj.active_tags( objective );
+        function active = is_active( obj, tag )
+            switch obj.view
+                case obj.SINGLE_VIEW
+                    active = obj.selected_objective == tag;
+                case obj.FEASIBILITY_VIEW
+                    active = obj.active_tags( tag );
                 otherwise
                     assert( false );
             end
         end
         
-        function values = get_current_values( obj )
-            values = double( obj.select_values() );
+        function value = get.objectives( obj )
+            switch obj.view
+                case obj.SINGLE_VIEW
+                    value = obj.select_single_values( obj.selected_tag );
+                case obj.FEASIBILITY_VIEW
+                    value = obj.select_feasibility_values();
+                otherwise
+                    assert( false )
+            end
+            value = double( value );
         end
         
         function range = get_color_axis_range( obj )
-            if strcmpi( obj.view_setting, obj.single_view ) && ...
-                    strcmpi( obj.mode, obj.values_mode )
-                values = obj.get_current_values();
+            if obj.view == obj.SINGLE_VIEW ...
+                    && obj.mode == obj.VALUES_MODE
+                values = obj.objectives;
                 range = [ ...
                     min( values, [], 'all' )
                     max( values, [], 'all' )
@@ -309,8 +328,8 @@ classdef OrientationDataModel < handle
             end
         end
         
-        function threshold = get_threshold( obj, objective )
-            threshold = obj.select_threshold( objective );
+        function threshold = get_threshold( obj, tag )
+            threshold = obj.select_threshold( tag );
             threshold = threshold.value;
         end
         
@@ -323,15 +342,15 @@ classdef OrientationDataModel < handle
         end
         
         function values = get_single_threshold_values( obj )
-            values = double( obj.select_single_thresholded_values( obj.selected_objective ) );
+            values = double( obj.select_single_thresholded_values( obj.selected_tag ) );
         end
         
         function count = get_objective_count( obj )
-            if ~obj.is_ready()
+            if ~obj.ready
                 count = 0;
-                return;
+            else
+                count = double( obj.response_data.count );
             end
-            count = double( obj.response_data.count );
         end
         
         function angles = get_selected_point_angles_in_degrees( obj )
@@ -343,7 +362,7 @@ classdef OrientationDataModel < handle
         end
         
         function value = get_value( obj )
-            % snap
+            % snap to grid
             offset = [ pi pi/2 ];
             total_length = [ 2*pi pi ];
             indices = ( deg2rad( obj.selected_angles ) + offset ) .* ...
@@ -352,42 +371,25 @@ classdef OrientationDataModel < handle
             indices = min( indices, obj.get_image_size() );
             indices = max( indices, 1 );
             indices = round( indices );
-            values = obj.select_values();
-            value = values( indices( 1 ), indices( 2 ) );
+            value = obj.objectives( indices( 1 ), indices( 2 ) );
         end
         
         function objective = get_objective_from_index( obj, index )
-            objectives = obj.response_data.tags;
-            objective = objectives{ index };
+            objective = obj.response_data.tags{ index };
         end
     end
     
     properties ( Access = private )
         response_data
         visualization_generator
-        view_setting
-        selected_objective
-        show_pareto
-        show_minimum
-        show_single_threshold
-        selected_angles
         active_tags
         value_thresholds
         quantile_thresholds
+        
+        valid_selected_tag(1,1) logical
     end
     
-    methods ( Access = public )
-        function values = select_values( obj )
-            switch obj.view_setting
-                case obj.single_view
-                    values = obj.select_single_values( obj.selected_objective );
-                case obj.feasibility_view
-                    values = obj.select_feasibility_values();
-                otherwise
-                    assert( false )
-            end
-        end
-        
+    methods ( Access = private )
         function values = select_feasibility_values( obj )
             values = true( obj.get_image_size() );
             for i = 1 : obj.get_objective_count()
@@ -401,19 +403,47 @@ classdef OrientationDataModel < handle
         end
         
         function values = select_single_values( obj, tag )
+            assert( obj.valid_selected_tag );
             switch obj.mode
-                case obj.values_mode
+                case obj.VALUES_MODE
                     values = obj.response_data.get_objective_values( tag );
-                case obj.quantiles_mode
+                case obj.QUANTILES_MODE
                     values = obj.response_data.get_quantile_values( tag );
                 otherwise
                     assert( false )
             end
         end
         
-        function values = select_single_thresholded_values( obj, objective )
-            values = obj.select_single_values( objective );
-            values = obj.threshold_values( objective, values );
+        function values = select_single_thresholded_values( obj, tag )
+            assert( obj.valid_selected_tag );
+            values = obj.select_single_values( tag );
+            values = obj.threshold_values( tag, values );
+        end
+        
+        function threshold = select_threshold( obj, tag )
+            switch obj.mode
+                case obj.VALUES_MODE
+                    threshold = obj.value_thresholds( tag );
+                case obj.QUANTILES_MODE
+                    threshold = obj.quantile_thresholds( tag );
+                otherwise
+                    assert( false )
+            end
+        end
+        
+        function points = select_pareto_decisions( obj )
+            points = rad2deg( obj.response_data.pareto_front );
+        end
+        
+        function values = select_pareto_objectives( obj, tag )
+            switch obj.mode
+                case obj.VALUES_MODE
+                    values = obj.response_data.get_pareto_front_values( tag );
+                case obj.QUANTILES_MODE
+                    values = obj.response_data.get_pareto_front_quantiles( tag );
+                otherwise
+                    assert( false );
+            end
         end
         
         function values = threshold_values( obj, objective, values )
@@ -421,62 +451,21 @@ classdef OrientationDataModel < handle
             values = values <= threshold;
         end
         
-        function threshold = select_threshold( obj, objective )
-            switch obj.mode
-                case obj.values_mode
-                    threshold = obj.value_thresholds( objective );
-                case obj.quantiles_mode
-                    threshold = obj.quantile_thresholds( objective );
+        function below = is_pareto_front_below( obj )
+            switch obj.view
+                case obj.SINGLE_VIEW
+                    values = obj.select_pareto_objectives( obj.selected_tag );
+                    below = obj.threshold_values( tag, values );
+                case obj.FEASIBILITY_VIEW
+                    t = obj.quantile_thresholds.values();
+                    thresholds = zeros( size( t ) );
+                    for i = 1 : numel( t )
+                        thresholds( i ) = t{ i }.value();
+                    end
+                    values = obj.response_data.pareto_quantiles;
+                    below = all( values <= thresholds, 2 );
                 otherwise
                     assert( false )
-            end
-        end
-        
-        function values = select_all_pareto_front_values( obj )
-            values = nan( obj.response_data.pareto_front_count, obj.get_objective_count() );
-            for i = 1 : obj.get_objective_count()
-                values( :, i ) = obj.get_pareto_front_values( obj.get_objective_from_index( i ) );
-            end
-        end
-        
-        function below = select_pareto_front_below( obj )
-            switch obj.view_setting
-                case obj.single_view
-                    below = obj.is_pareto_front_below_single_threshold( obj.selected_objective );
-                case obj.feasibility_view
-                    below = obj.is_pareto_front_feasible();
-                otherwise
-                    assert( false )
-            end
-        end
-        
-        function below = is_pareto_front_feasible( obj )
-            t = obj.quantile_thresholds.values();
-            v = zeros( size( t ) );
-            for i = 1 : numel( t )
-                v( i ) = t{ i }.value();
-            end
-            values = obj.response_data.pareto_quantiles;
-            below = all( values <= v, 2 );
-        end
-        
-        function below = is_pareto_front_below_single_threshold( obj, tag )
-            values = obj.get_pareto_front_values( tag );
-            below = obj.threshold_values( tag, values );
-        end
-        
-        function count = get_pareto_front_count( obj )
-            count = obj.response_data.pareto_front_count;
-        end
-        
-        function values = get_pareto_front_values( obj, objective )
-            switch obj.mode
-                case obj.values_mode
-                    values = obj.response_data.get_pareto_front_values( objective );
-                case obj.quantiles_mode
-                    values = obj.response_data.get_pareto_front_quantiles( objective );
-                otherwise
-                    assert( false );
             end
         end
         

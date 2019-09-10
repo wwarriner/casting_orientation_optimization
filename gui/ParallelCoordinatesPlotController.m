@@ -131,7 +131,7 @@ classdef ParallelCoordinatesPlotController < handle
                 mhs{ i } = mh;
             end
             obj.marker_handles = containers.Map( ...
-                obj.model.get_tags(), ...
+                obj.model.tags, ...
                 mhs ...
                 );
             limits = obj.model.get_all_data_limits();
@@ -170,7 +170,7 @@ classdef ParallelCoordinatesPlotController < handle
                     sbhs{ i } = sbh;
                 end
                 obj.shaded_box_handles = containers.Map( ...
-                    obj.model.get_tags(), ...
+                    obj.model.tags, ...
                     sbhs ...
                     );
             end
@@ -188,38 +188,27 @@ classdef ParallelCoordinatesPlotController < handle
         end
         
         function update_line_colors( obj )
-            below = obj.model.select_pareto_front_below();
-%             if ~isempty( obj.last_below )
-%                 below = below & ~obj.last_below;
-%             end
+            below = obj.model.pareto_below;
             on_top_inds = find( below );
             for i = 1 : numel( on_top_inds )
                 h = obj.pch( on_top_inds( i ) );
                 h.Color = obj.ORANGE;
             end
-%             obj.last_below = below;
             
             above = ~below;
-%             if ~isempty( obj.last_above )
-%                 above = above & ~obj.last_above;
-%             end
             on_bottom_inds = find( above );
             for i = 1 : numel( on_bottom_inds )
                 h = obj.pch( on_bottom_inds( i ) );
                 h.Color = obj.GRAY;
             end
-%             obj.last_above = above;
             
-            start = numel( obj.axes.Children ) - numel( obj.pch ) + 1;
-            unchanged_inds = setdiff( 1 : numel( obj.pch ), [ on_top_inds; on_bottom_inds ] ).';
             order = [ on_top_inds; unchanged_inds; on_bottom_inds ];
-            %order = order + start - 1;
             obj.axes.Children( start : end ) = obj.pch( order );
         end
         
         function update_plot( obj )
             limits = obj.model.get_all_data_limits().';
-            v = obj.model.get_all_pareto_front_values();
+            v = obj.model.pareto_objectives;
             v = ( v - limits( 1, : ) ) ./ ( limits( 2, : ) - limits( 1, : ) );
             if isempty( obj.pch )
                 obj.pch = parallelcoords( ...

@@ -20,19 +20,19 @@ classdef PointDisplayController < handle
         end
         
         function update_pareto_front( obj )
-            do_show = obj.is_pareto_front_selected();
-            obj.model.show_pareto_front( do_show );
+            obj.model.show_pareto_front = obj.is_pareto_front_selected();
         end
         
         function update_global_minimum( obj )
-            if ~obj.model.is_global_minimum_relevant()
-                obj.global_minimum_check_box.Enable = false;
-                obj.model.show_global_minimum( false );
+            if ~obj.model.global_minimum_relevant
+                enable = false;
+                show = false;
             else
-                obj.global_minimum_check_box.Enable = true;
-                do_show = obj.is_global_minimum_selected();
-                obj.model.show_global_minimum( do_show );
+                enable = true;
+                show = obj.is_global_minimum_selected();
             end
+            obj.global_minimum_check_box.Enable = enable;
+            obj.model.show_global_minimum = show;
         end
         
         function update_selected_point( obj )
