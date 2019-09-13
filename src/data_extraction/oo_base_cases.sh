@@ -15,7 +15,7 @@ for filename in $STL_FOLDER/*.stl; do
 	STL_PATHS+=("$filename")
 done
 STL_PATH_COUNT=${#STL_PATHS[@]}
-if (( $STL_PATH_COUNT <= 0 ))
+if (( $STL_PATH_COUNT <= 0 )); then
 	printf "Didn't find any STL files in %s\n" $STL_FOLDER
 	exit
 fi
