@@ -14,7 +14,7 @@ if ~isfolder( settings.manager.output_folder )
     mkdir( settings.manager.output_folder )
 end
 
-obc_name = obc.name + "_base_case.mat";
+obc_name = obc.name + ".obc";
 obc_path = fullfile( settings.manager.output_folder, obc_name );
 obc.save_obj( obc_path );
 
