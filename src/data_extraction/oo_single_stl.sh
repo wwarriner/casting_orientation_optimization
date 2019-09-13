@@ -48,7 +48,7 @@ mkdir -p $OUTPUT_PATH
 
 # MATLAB
 RECIPE_CLASS='DefaultRecipe'
-RECIPE_CLASS_FILE=$DATA_EXTRACTION_DIR'\'$RECIPE_CLASS'.m'
+RECIPE_CLASS_FILE=$DATA_EXTRACTION_DIR'/'$RECIPE_CLASS'.m'
 if [ ! -f "$RECIPE_CLASS_FILE" ]; then
 	printf "Can't locate recipe M file: %s\n" $RECIPE_CLASS_FILE
 	exit
