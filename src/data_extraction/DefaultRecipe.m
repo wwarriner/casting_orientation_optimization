@@ -89,7 +89,7 @@ classdef DefaultRecipe < OrientationRecipeInterface
             i( k ) = "linear";
             
             k = "parting_draw";
-            p( k ) = m( "Parting_draw" ) ./ m( "Casting_bounding_sphere_diameter" );
+            p( k ) = m( "Parting_draw" ) ./ ( 2 * m( "Casting_bounding_sphere_diameter" ) );
             i( k ) = "linear";
             
             k = "undercut_count";
