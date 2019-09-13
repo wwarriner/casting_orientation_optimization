@@ -42,7 +42,7 @@ classdef ImagePlotController < handle
                 obj.colorbar_handle = cbh;
             end
             
-            obj.image_handle.CData = obj.model.get_current_values();
+            obj.image_handle.CData = obj.model.objectives;
             range = obj.model.get_color_axis_range();
             caxis( obj.axes, range );
             obj.colorbar_handle.Ticks = linspace( ...
@@ -182,9 +182,9 @@ classdef ImagePlotController < handle
             
             %point = obj.get_axes_point();
             if nargin < 2
-                point = obj.model.get_selected_point_angles_in_degrees();
+                point = obj.model.selected_angles_deg;
             end
-            obj.model.selected_angles = point;
+            obj.model.selected_angles_deg = point;
             obj.selected_point_handle.XData = point( 1 );
             obj.selected_point_handle.YData = point( 2 );
         end

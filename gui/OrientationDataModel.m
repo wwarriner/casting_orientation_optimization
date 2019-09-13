@@ -7,7 +7,7 @@ classdef OrientationDataModel < handle
         show_pareto_front(1,1) logical
         show_global_minimum(1,1) logical
         show_threshold(1,1) logical
-        selected_angles(1,2) double {mustBeReal,mustBeFinite}
+        selected_angles_deg(1,2) double {mustBeReal,mustBeFinite}
         selected_tag(1,1) string
     end
     
@@ -35,19 +35,26 @@ classdef OrientationDataModel < handle
         pareto_below(:,1) logical
         pareto_decisions_above_tag_threshold(:,2) double
         pareto_decisions_below_tag_threshold(:,2) double
-        objectives(:,:) double
+        objectives(:,1) double
+        selected_angles_rad(1,2) double {mustBeReal,mustBeFinite}
     end
     
     methods
         function obj = OrientationDataModel()
             obj.resolution_factor = 300;
-            obj.selected_angles = [ 0 0 ];
+            obj.selected_angles_deg = [ 0 0 ];
         end
         
-        function canceled = load( obj, root_path )
+        function canceled = load( obj, fallback_path )
+            % setup
+            if obj.previous_load_path ~= "" ...
+                    && isfolder( obj.previous_load_path )
+                start_path = obj.previous_load_path;
+            else
+                start_path = fallback_path;
+            end
             
             % dialog
-            start_path = fullfile( root_path, 'sample' );
             EXT = '.ood';
             filter = fullfile( start_path, [ '*' EXT ] );
             [ file, path ] = uigetfile( filter );
@@ -57,6 +64,7 @@ classdef OrientationDataModel < handle
                 return;
             end
             data_file = fullfile( path, file );
+            obj.previous_load_path = path;
             
             % load response data
             new_data = OrientationData.load_obj( data_file );
@@ -110,39 +118,47 @@ classdef OrientationDataModel < handle
                 end
             end
             
+            % load base case
+            [ ~, filename, ~ ] = fileparts( file );
+            bc_file = fullfile( path, filename + ".obc" );
+            assert( isfile( bc_file ) );
+            obc = OrientationBaseCase.load_obj( bc_file );
+            visualization_generator_in = VisualizationGenerator( obc );
+            
             % setup
             obj.active_tags = new_active_tags;
             obj.value_thresholds = new_value_thresholds;
             obj.quantile_thresholds = new_quantile_thresholds;
             obj.response_data = new_data;
+            obj.visualization_generator = visualization_generator_in;
             % TODO vis generator
         end
         
         function visualize( obj )
             % TODO update this to use uifigure/uiaxes when rotation tools avail
             fh = figure();
-            fh.MenuBar = 'none';
-            fh.ToolBar = 'none';
-            fh.DockControls = 'off';
-            fh.Color = 'w';
-            fh.Resize = 'off';
-            deg_angles = obj.get_selected_point_angles_in_degrees();
+            fh.MenuBar = "none";
+            fh.ToolBar = "none";
+            fh.DockControls = "off";
+            fh.Color = "w";
+            fh.Resize = "off";
+            deg_angles = obj.selected_angles_deg;
             fh.Name = sprintf( ...
-                'Visualization of %s with @X: %.2f and @Y: %.2f', ...
+                "Visualization of %s with @X: %.2f and @Y: %.2f", ...
                 obj.response_data.name, ...
                 deg_angles( 1 ), ...
                 deg_angles( 2 ) ...
                 );
-            fh.NumberTitle = 'off';
-            cameratoolbar( fh, 'show' );
+            fh.NumberTitle = "off";
+            cameratoolbar( fh, "show" );
             axh = axes( fh );
-            axh.Color = 'none';
-            hold( axh, 'on' );
-            view( axh, 3 );
-            light( axh, 'Position', [ 0 0 -1 ] );
-            light( axh, 'Position', [ 0 0 1 ] );
-            axis( axh, 'equal', 'vis3d', 'off' );
-            obj.visualization_generator.draw( axh, obj.get_selected_point_angles_in_radians() );
+            axh.Color = "none";
+            hold( axh, "on" );
+            view( axh, 3 ); %#ok<CPROP> Intended to be view() function.
+            light( axh, "Position", [ 0 0 -1 ] );
+            light( axh, "Position", [ 0 0 1 ] );
+            axis( axh, "equal", "vis3d", "off" );
+            obj.visualization_generator.draw( axh, obj.selected_angles_rad );
         end
         
         function set.mode( obj, value )
@@ -180,7 +196,7 @@ classdef OrientationDataModel < handle
                 case obj.QUANTILES_MODE
                     threshold = obj.quantile_thresholds( tag );
                 otherwise
-                    assert( false )
+                    assert( false );
             end
             threshold.update( value );
         end
@@ -262,7 +278,7 @@ classdef OrientationDataModel < handle
                 case obj.FEASIBILITY_VIEW
                     value = false;
                 otherwise
-                    assert( false )
+                    assert( false );
             end
         end
         
@@ -281,7 +297,7 @@ classdef OrientationDataModel < handle
         function enabled = is_enabled( obj, tag )
             switch obj.view
                 case obj.SINGLE_VIEW
-                    enabled = obj.selected_objective == tag;
+                    enabled = obj.selected_tag == tag;
                 case obj.FEASIBILITY_VIEW
                     enabled = true;
                 otherwise
@@ -292,7 +308,7 @@ classdef OrientationDataModel < handle
         function active = is_active( obj, tag )
             switch obj.view
                 case obj.SINGLE_VIEW
-                    active = obj.selected_objective == tag;
+                    active = obj.selected_tag == tag;
                 case obj.FEASIBILITY_VIEW
                     active = obj.active_tags( tag );
                 otherwise
@@ -307,7 +323,7 @@ classdef OrientationDataModel < handle
                 case obj.FEASIBILITY_VIEW
                     value = obj.select_feasibility_values();
                 otherwise
-                    assert( false )
+                    assert( false );
             end
             value = double( value );
         end
@@ -353,19 +369,15 @@ classdef OrientationDataModel < handle
             end
         end
         
-        function angles = get_selected_point_angles_in_degrees( obj )
-            angles = obj.selected_angles();
-        end
-        
-        function angles = get_selected_point_angles_in_radians( obj )
-            angles = deg2rad( obj.selected_angles() );
+        function value = get.selected_angles_rad( obj )
+            value = deg2rad( obj.selected_angles_deg );
         end
         
         function value = get_value( obj )
             % snap to grid
             offset = [ pi pi/2 ];
             total_length = [ 2*pi pi ];
-            indices = ( deg2rad( obj.selected_angles ) + offset ) .* ...
+            indices = ( obj.selected_angles_rad + offset ) .* ...
                 obj.get_image_size() ...
                 ./ total_length;
             indices = min( indices, obj.get_image_size() );
@@ -385,6 +397,7 @@ classdef OrientationDataModel < handle
         active_tags
         value_thresholds
         quantile_thresholds
+        previous_load_path(1,1) string
         
         valid_selected_tag(1,1) logical
     end
@@ -410,7 +423,7 @@ classdef OrientationDataModel < handle
                 case obj.QUANTILES_MODE
                     values = obj.response_data.get_quantile_values( tag );
                 otherwise
-                    assert( false )
+                    assert( false );
             end
         end
         
@@ -421,13 +434,18 @@ classdef OrientationDataModel < handle
         end
         
         function threshold = select_threshold( obj, tag )
+            t = obj.select_all_thresholds();
+            threshold = t( tag );
+        end
+        
+        function threshold = select_all_thresholds( obj )
             switch obj.mode
                 case obj.VALUES_MODE
-                    threshold = obj.value_thresholds( tag );
+                    threshold = obj.value_thresholds;
                 case obj.QUANTILES_MODE
-                    threshold = obj.quantile_thresholds( tag );
+                    threshold = obj.quantile_thresholds;
                 otherwise
-                    assert( false )
+                    assert( false );
             end
         end
         
@@ -446,6 +464,17 @@ classdef OrientationDataModel < handle
             end
         end
         
+        function values = select_all_pareto_objectives( obj )
+            switch obj.mode
+                case obj.VALUES_MODE
+                    values = obj.response_data.pareto_objectives;
+                case obj.QUANTILES_MODE
+                    values = obj.response_data.pareto_quantiles;
+                otherwise
+                    assert( false );
+            end
+        end
+        
         function values = threshold_values( obj, objective, values )
             threshold = obj.get_threshold( objective );
             values = values <= threshold;
@@ -455,17 +484,18 @@ classdef OrientationDataModel < handle
             switch obj.view
                 case obj.SINGLE_VIEW
                     values = obj.select_pareto_objectives( obj.selected_tag );
-                    below = obj.threshold_values( tag, values );
+                    below = obj.threshold_values( obj.selected_tag, values );
                 case obj.FEASIBILITY_VIEW
-                    t = obj.quantile_thresholds.values();
+                    t = obj.select_all_thresholds();
+                    t = t.values();
                     thresholds = zeros( size( t ) );
                     for i = 1 : numel( t )
                         thresholds( i ) = t{ i }.value();
                     end
-                    values = obj.response_data.pareto_quantiles;
+                    values = obj.select_all_pareto_objectives();
                     below = all( values <= thresholds, 2 );
                 otherwise
-                    assert( false )
+                    assert( false );
             end
         end
         

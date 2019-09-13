@@ -146,7 +146,9 @@ classdef ParallelCoordinatesPlotController < handle
                 e = obj.model.is_enabled( objective );
                 if a && e
                     mh.Visible = 'on';
-                    mh.YData = v( i );
+                    y = max( v( i ), obj.axes.YLim( 1 ) );
+                    y = min( y, obj.axes.YLim( 2 ) );
+                    mh.YData = y;
                 else
                     mh.Visible = 'off';
                 end
@@ -202,7 +204,9 @@ classdef ParallelCoordinatesPlotController < handle
                 h.Color = obj.GRAY;
             end
             
+            unchanged_inds = setdiff( 1 : numel( obj.pch ), [ on_top_inds; on_bottom_inds ] ).';
             order = [ on_top_inds; unchanged_inds; on_bottom_inds ];
+            start = numel( obj.axes.Children ) - numel( obj.pch ) + 1;
             obj.axes.Children( start : end ) = obj.pch( order );
         end
         

@@ -63,7 +63,7 @@ classdef PointDisplayController < handle
         end
         
         function data = get_selected_point_data( obj )
-            data.angles = obj.model.get_selected_point_angles_in_degrees();
+            data.angles = obj.model.selected_angles_deg;
             data.value = obj.model.get_value();
         end
         

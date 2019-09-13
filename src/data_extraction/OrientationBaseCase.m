@@ -43,6 +43,32 @@ classdef OrientationBaseCase < Saveable
             rotated_case.add( ProcessKey( f.NAME ), f );
         end
         
+        function body = rotate_casting_body( obj, angles )
+            assert( isa( angles, 'double' ) );
+            assert( isreal( angles ) );
+            assert( all( isfinite( angles ) ) );
+            assert( isvector( angles ) );
+            assert( numel( angles ) == 2 );
+            
+            r = Rotation();
+            r.angles = [ angles 0 ];
+            r.origin = obj.casting.centroid;
+            body = obj.casting.rotate_for_display( r );
+        end
+        
+        function bodies = rotate_feeder_bodies( obj, angles )
+            assert( isa( angles, 'double' ) );
+            assert( isreal( angles ) );
+            assert( all( isfinite( angles ) ) );
+            assert( isvector( angles ) );
+            assert( numel( angles ) == 2 );
+            
+            r = Rotation();
+            r.angles = [ angles 0 ];
+            r.origin = obj.casting.centroid;
+            bodies = obj.feeders.rotate_for_display( r );
+        end
+        
         function name = get.name( obj )
             name = obj.casting.name;
         end

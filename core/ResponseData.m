@@ -6,6 +6,7 @@ classdef ResponseData < handle
     
     properties ( SetAccess = private, Dependent )
         name(1,1) string
+        stl_file(1,1) string
         count(1,1) string
         grid_size(1,:) double {mustBeReal,mustBeFinite}
         tags(1,:) string
@@ -36,7 +37,11 @@ classdef ResponseData < handle
         end
         
         function value = get.name( obj )
-            value = obj.orientation_data.name;
+            [ ~, value, ~ ] = fileparts( obj.stl_file );
+        end
+        
+        function value = get.stl_file( obj )
+            value = obj.orientation_data.stl_file;
         end
         
         function value = get.count( obj )
