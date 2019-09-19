@@ -34,7 +34,7 @@ if [ ! -f "$ANGLES_FILE" ]; then
 fi
 ANGLES_COUNT=$(( $( wc -l < $ANGLES_FILE ) -1 ))
 
-BASE_CASE_FILE=$ROOT_DIR'/oo_data/'$COMPONENT_NAME'_base_case.mat'
+BASE_CASE_FILE=$ROOT_DIR'/oo_data/'$COMPONENT_NAME'.obc'
 if [ ! -f "$BASE_CASE_FILE" ]; then
 	printf "Can't locate base case MAT file: %s\n" $BASE_CASE_FILE
 	printf "Run oo_base_cases.sh first to generate.\n"
