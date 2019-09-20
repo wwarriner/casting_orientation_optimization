@@ -80,7 +80,7 @@ classdef DefaultRecipe < OrientationRecipeInterface
             p( k ) = m( "Feeders_sum_interface_area" ) ./ area;
             i( k ) = "linear";
             
-            k = "parting_reciprocal_projected_area";
+            k = "parting_projected_area";
             diff = m( "Casting_surface_area" ) - m( "Parting_area" );
             p( k ) = diff ./ m( "Casting_surface_area" );
             i( k ) = "linear";
