@@ -28,6 +28,7 @@ if [ ! -d "$OUTPUT_DIR" ]; then
 	exit
 fi
 
+TIME=$(date +%s%N)
 LOGGING_PATH=$ROOT_DIR'/output_'$TIME
 mkdir -p $LOGGING_PATH
 if [ ! -d "$LOGGING_PATH" ]; then
