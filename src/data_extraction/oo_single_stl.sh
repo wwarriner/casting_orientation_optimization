@@ -64,7 +64,7 @@ if [ ! -f "$RECIPE_CLASS_FILE" ]; then
 	printf "Can't locate recipe M file: %s\n" $RECIPE_CLASS_FILE
 	exit
 fi
-RUN_CMD='addpath( genpath( '\'$CGT_DIR\'' ) );addpath( genpath( '\'$COO_DIR\'' ) );generate_data_on_hpc( '\'$BASE_CASE_FILE\'', '\'$RECIPE_CLASS\'', [$ANGLES], $SLURM_ARRAY_TASK_ID, $SLURM_ARRAY_JOB_ID, $OUTPUT_PATH );exit;'
+RUN_CMD='addpath( genpath( '\'$CGT_DIR\'' ) );addpath( genpath( '\'$COO_DIR\'' ) );generate_data_on_hpc( '\'$BASE_CASE_FILE\'', '\'$RECIPE_CLASS\'', [$ANGLES], $SLURM_ARRAY_TASK_ID, $SLURM_ARRAY_JOB_ID, '\'$OUTPUT_PATH\'' );exit;'
 
 NAME=oo_project
 ARRAYMAX=$ANGLES_COUNT
