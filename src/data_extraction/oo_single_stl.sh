@@ -5,7 +5,6 @@ PATH=$PATH:"$ROOT_DIR"
 COMPONENT_NAME=$1
 
 REPOS_DIR=$ROOT_DIR'/repos'
-OUTPUT_DIR=$ROOT_DIR'/oo_results'
 
 # Toolsuite
 CGT_DIR=$REPOS_DIR'/casting_geometric_toolsuite'

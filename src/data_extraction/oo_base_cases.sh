@@ -23,8 +23,8 @@ fi
 REPOS_DIR=$ROOT_DIR'/repos'
 OUTPUT_DIR=$ROOT_DIR'/oo_data'
 mkdir -p $OUTPUT_DIR
-if [ ! -d "$OUTPUT_PATH" ]; then
-	printf "Can't locate OUTPUT_PATH: %s\n" $OUTPUT_PATH
+if [ ! -d "$OUTPUT_DIR" ]; then
+	printf "Can't locate OUTPUT_DIR: %s\n" $OUTPUT_DIR
 	exit
 fi
 
