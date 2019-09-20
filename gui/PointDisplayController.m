@@ -4,19 +4,24 @@ classdef PointDisplayController < handle
         function obj = PointDisplayController( ...
                 pareto_front_check_box, ...
                 global_minimum_check_box, ...
-                selected_point_text_area, ...
+                rotation_x_spinner, ...
+                rotation_x_slider, ...
+                rotation_y_spinner, ...
+                rotation_y_slider, ...
                 orientation_data_model ...
                 )
             obj.pareto_front_check_box = pareto_front_check_box;
             obj.global_minimum_check_box = global_minimum_check_box;
-            obj.selected_point_text_area = selected_point_text_area;
+            obj.rotation_x_spinner = rotation_x_spinner;
+            obj.rotation_x_slider = rotation_x_slider;
+            obj.rotation_y_spinner = rotation_y_spinner;
+            obj.rotation_y_slider = rotation_y_slider;
             obj.model = orientation_data_model;
         end
         
         function update_all( obj )
             obj.update_pareto_front();
             obj.update_global_minimum();
-            obj.update_selected_point();
         end
         
         function update_pareto_front( obj )
@@ -35,10 +40,46 @@ classdef PointDisplayController < handle
             obj.model.show_global_minimum = show;
         end
         
-        function update_selected_point( obj )
+        function update_selected_point_by_click( obj )
             point_data = obj.get_selected_point_data();
-            text = obj.format_text( point_data );
-            obj.set_selected_point_text( text );
+            obj.rotation_x_spinner.Value = point_data.angles( 1 );
+            obj.rotation_x_slider.Value = point_data.angles( 1 );
+            obj.rotation_x_spinner.Value = point_data.angles( 2 );
+            obj.rotation_x_slider.Value = point_data.angles( 2 );
+        end
+        
+        function update_selected_point_by_spinner( obj, axis )
+            curr = obj.model.selected_angles_deg;
+            value = curr( axis );
+            switch axis
+                case 1
+                    value = obj.rotation_x_spinner.Value;
+                    obj.rotation_x_slider.Value = value;
+                case 2
+                    value = obj.rotation_y_spinner.Value;
+                    obj.rotation_y_slider.Value = value;
+                otherwise
+                    assert( false );
+            end
+            curr( axis ) = value;
+            obj.model.selected_angles_deg = curr;
+        end
+        
+        function update_selected_point_by_slider( obj, axis )
+            curr = obj.model.selected_angles_deg;
+            value = curr( axis );
+            switch axis
+                case 1
+                    value = obj.rotation_x_slider.Value;
+                    obj.rotation_x_spinner.Value = value;
+                case 2
+                    value = obj.rotation_y_slider.Value;
+                    obj.rotation_y_spinner.Value = value;
+                otherwise
+                    assert( false );
+            end
+            curr( axis ) = value;
+            obj.model.selected_angles_deg = curr;
         end
         
         function visualize_selected_point( obj )
@@ -49,7 +90,10 @@ classdef PointDisplayController < handle
     properties ( Access = private )
         pareto_front_check_box
         global_minimum_check_box
-        selected_point_text_area
+        rotation_x_spinner
+        rotation_x_slider
+        rotation_y_spinner
+        rotation_y_slider
         model
     end
     
@@ -66,29 +110,6 @@ classdef PointDisplayController < handle
             data.angles = obj.model.selected_angles_deg;
             data.value = obj.model.get_value();
         end
-        
-        function set_selected_point_text( obj, text )
-            obj.selected_point_text_area.Value = text;
-        end
     end
-    
-    methods ( Access = private, Static )
-        function text = format_text( point_data )
-            NUMERIC_FORMAT = '%.3g';
-            format = [ ...
-                'Selected point:' newline ...
-                '  @x: ' NUMERIC_FORMAT degree_symbol() newline ...
-                '  @y: ' NUMERIC_FORMAT degree_symbol() newline ...
-                '  value: ' NUMERIC_FORMAT ...
-                ];
-            text = sprintf( ...
-                format, ...
-                point_data.angles( 1 ), ...
-                point_data.angles( 2 ), ...
-                point_data.value ...
-                );
-        end
-    end
-    
 end
 
