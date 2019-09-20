@@ -45,6 +45,17 @@ TIME=$(date +%s%N)
 OUTPUT_BASE_PATH=$ROOT_DIR'/oo_results/'$COMPONENT_NAME
 OUTPUT_PATH=$OUTPUT_BASE_PATH'_$SLURM_ARRAY_JOB_ID_'$TIME
 mkdir -p $OUTPUT_PATH
+if [ ! -d "$OUTPUT_PATH" ]; then
+	printf "Can't locate OUTPUT_PATH: %s\n" $OUTPUT_PATH
+	exit
+fi
+
+LOGGING_PATH=$ROOT_DIR'/output_'$TIME
+mkdir -p $LOGGING_PATH
+if [ ! -d "$LOGGING_PATH" ]; then
+	printf "Can't locate LOGGING_PATH: %s\n" $LOGGING_PATH
+	exit
+fi
 
 # MATLAB
 RECIPE_CLASS='DefaultRecipe'
@@ -53,7 +64,7 @@ if [ ! -f "$RECIPE_CLASS_FILE" ]; then
 	printf "Can't locate recipe M file: %s\n" $RECIPE_CLASS_FILE
 	exit
 fi
-RUN_CMD='addpath( genpath( '\'$CGT_DIR\'' ) );addpath( genpath( '\'$COO_DIR\'' ) );generate_data_on_hpc( '\'$BASE_CASE_FILE\'', '\'$RECIPE_CLASS\'', [$ANGLES], $SLURM_ARRAY_TASK_ID, $SLURM_ARRAY_JOB_ID, '\'$OUTPUT_PATH\'' );exit;'
+RUN_CMD='addpath( genpath( '\'$CGT_DIR\'' ) );addpath( genpath( '\'$COO_DIR\'' ) );generate_data_on_hpc( '\'$BASE_CASE_FILE\'', '\'$RECIPE_CLASS\'', [$ANGLES], $SLURM_ARRAY_TASK_ID, $SLURM_ARRAY_JOB_ID, $OUTPUT_PATH );exit;'
 
 NAME=oo_project
 ARRAYMAX=$ANGLES_COUNT
@@ -66,7 +77,7 @@ MAILTYPE=FAIL
 MAILADDRESS='wwarr@uab.edu'
 
 #0-$ARRAYMAX
-sbatch --array=0-$ARRAYMAX%$MAXTASKS --job-name $NAME --output=$ROOT_DIR/output/output_%A_%a.txt --ntasks=$TASKS --mem-per-cpu=$MEMORY --time=$TIME --partition=$PARTITION --mail-type=$MAILTYPE --mail-user=$MAILADDRESS <<LIMITING_STRING
+sbatch --array=0-$ARRAYMAX%$MAXTASKS --job-name $NAME --output=$LOGGING_PATH/output_%A_%a.txt --ntasks=$TASKS --mem-per-cpu=$MEMORY --time=$TIME --partition=$PARTITION --mail-type=$MAILTYPE --mail-user=$MAILADDRESS <<LIMITING_STRING
 #!/bin/bash
 module load rc/matlab/R2019a
 ANGLES=\$( sed \$(( \$SLURM_ARRAY_TASK_ID+1 ))'q;d' $ANGLES_FILE )

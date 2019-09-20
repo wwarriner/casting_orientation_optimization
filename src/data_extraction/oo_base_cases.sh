@@ -23,6 +23,17 @@ fi
 REPOS_DIR=$ROOT_DIR'/repos'
 OUTPUT_DIR=$ROOT_DIR'/oo_data'
 mkdir -p $OUTPUT_DIR
+if [ ! -d "$OUTPUT_PATH" ]; then
+	printf "Can't locate OUTPUT_PATH: %s\n" $OUTPUT_PATH
+	exit
+fi
+
+LOGGING_PATH=$ROOT_DIR'/output_'$TIME
+mkdir -p $LOGGING_PATH
+if [ ! -d "$LOGGING_PATH" ]; then
+	printf "Can't locate LOGGING_PATH: %s\n" $LOGGING_PATH
+	exit
+fi
 
 # Toolsuite
 CGT_DIR=$REPOS_DIR'/casting_geometric_toolsuite'
@@ -57,7 +68,7 @@ MAILTYPE=FAIL
 MAILADDRESS='wwarr@uab.edu'
 
 #0-$ARRAYMAX
-sbatch --array=0-$ARRAYMAX%$MAXTASKS --job-name $NAME --output=$ROOT_DIR/output/output_%A_%a.txt --ntasks=$TASKS --mem-per-cpu=$MEMORY --time=$TIME --partition=$PARTITION --mail-type=$MAILTYPE --mail-user=$MAILADDRESS <<LIMITING_STRING
+sbatch --array=0-$ARRAYMAX%$MAXTASKS --job-name $NAME --output=$LOGGING_PATH/output_%A_%a.txt --ntasks=$TASKS --mem-per-cpu=$MEMORY --time=$TIME --partition=$PARTITION --mail-type=$MAILTYPE --mail-user=$MAILADDRESS <<LIMITING_STRING
 #!/bin/bash
 module load rc/matlab/R2019a
 PATHS=(${STL_PATHS[@]})
