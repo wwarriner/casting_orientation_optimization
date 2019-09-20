@@ -85,7 +85,7 @@ classdef DefaultRecipe < OrientationRecipeInterface
             i( k ) = "linear";
             
             k = "parting_flatness";
-            p( k ) = m( "Parting_flatness" );
+            p( k ) = 1 - ( 1 ./ m( "Parting_flatness" ) );
             i( k ) = "linear";
             
             k = "parting_draw";
