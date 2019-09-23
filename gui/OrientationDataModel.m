@@ -18,12 +18,9 @@ classdef OrientationDataModel < handle
         FEASIBILITY_VIEW = "feasibility";
     end
     
-    properties ( SetAccess = private )
-        name(1,1) string
-    end
-    
     properties ( SetAccess = private, Dependent )
         ready(1,1) logical
+        name(1,1) string
         modes(:,1) string
         views(:,1) string
         tags(:,1) string
@@ -207,6 +204,10 @@ classdef OrientationDataModel < handle
         
         function value = get.ready( obj )
             value = ~isempty( obj.response_data );
+        end
+        
+        function value = get.name( obj )
+            value = obj.response_data.name;
         end
         
         function value = get.modes( obj )

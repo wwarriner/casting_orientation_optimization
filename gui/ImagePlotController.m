@@ -165,6 +165,10 @@ classdef ImagePlotController < handle
         end
         
         function update_clicked( obj, point )
+            if ~obj.model.ready
+                return;
+            end
+            
             % color from http://jfly.iam.u-tokyo.ac.jp/color/#redundant2
             if isempty( obj.selected_point_handle )
                 sph = plot( ...

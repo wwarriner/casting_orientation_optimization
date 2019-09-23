@@ -140,6 +140,7 @@ classdef FeasibilityThresholdSelectionController < handle
             sl = obj.sliders( objective );
             sl.Limits = limits;
             sl.Value = value;
+            obj.adjust_slider_ticks( sl, limits );
         end
         
         function update_spinner_value( obj, objective, limits, value )
@@ -238,6 +239,14 @@ classdef FeasibilityThresholdSelectionController < handle
             clone.Position( 3 ) = base.Position( 3 );
             clone.Tag = objective;
             clone.ValueChangedFcn = base.ValueChangedFcn;
+        end
+        
+        function adjust_slider_ticks( slider, limits )
+            MAJOR_TICK_COUNT = 5;
+            slider.MajorTicks = linspace( limits( 1 ), limits( 2 ), MAJOR_TICK_COUNT );
+            
+            MINOR_TICK_COUNT = 21;
+            slider.MinorTicks = linspace( limits( 1 ), limits( 2 ), MINOR_TICK_COUNT );
         end
     end
     

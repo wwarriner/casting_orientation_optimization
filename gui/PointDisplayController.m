@@ -41,16 +41,16 @@ classdef PointDisplayController < handle
         end
         
         function update_selected_point_by_click( obj )
-            point_data = obj.get_selected_point_data();
-            obj.rotation_x_spinner.Value = point_data.angles( 1 );
-            obj.rotation_x_slider.Value = point_data.angles( 1 );
-            obj.rotation_x_spinner.Value = point_data.angles( 2 );
-            obj.rotation_x_slider.Value = point_data.angles( 2 );
+            selected = obj.model.selected_angles_deg;
+            obj.rotation_x_spinner.Value = selected( 1 );
+            obj.rotation_x_slider.Value = selected( 1 );
+            obj.rotation_y_spinner.Value = selected( 2 );
+            obj.rotation_y_slider.Value = selected( 2 );
         end
         
         function update_selected_point_by_spinner( obj, axis )
-            curr = obj.model.selected_angles_deg;
-            value = curr( axis );
+            selected = obj.model.selected_angles_deg;
+            value = selected( axis );
             switch axis
                 case 1
                     value = obj.rotation_x_spinner.Value;
@@ -61,13 +61,13 @@ classdef PointDisplayController < handle
                 otherwise
                     assert( false );
             end
-            curr( axis ) = value;
-            obj.model.selected_angles_deg = curr;
+            selected( axis ) = value;
+            obj.model.selected_angles_deg = selected;
         end
         
         function update_selected_point_by_slider( obj, axis )
-            curr = obj.model.selected_angles_deg;
-            value = curr( axis );
+            selected = obj.model.selected_angles_deg;
+            value = selected( axis );
             switch axis
                 case 1
                     value = obj.rotation_x_slider.Value;
@@ -78,8 +78,8 @@ classdef PointDisplayController < handle
                 otherwise
                     assert( false );
             end
-            curr( axis ) = value;
-            obj.model.selected_angles_deg = curr;
+            selected( axis ) = value;
+            obj.model.selected_angles_deg = selected;
         end
         
         function visualize_selected_point( obj )
@@ -104,11 +104,6 @@ classdef PointDisplayController < handle
         
         function selected = is_global_minimum_selected( obj )
             selected = obj.global_minimum_check_box.Value;
-        end
-        
-        function data = get_selected_point_data( obj )
-            data.angles = obj.model.selected_angles_deg;
-            data.value = obj.model.get_value();
         end
     end
 end
