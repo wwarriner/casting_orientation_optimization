@@ -81,5 +81,5 @@ sbatch --array=0-$ARRAYMAX%$MAXTASKS --job-name $NAME --output=$LOGGING_PATH/out
 module load rc/matlab/R2019a
 ANGLES=\$( sed \$(( \$SLURM_ARRAY_TASK_ID+1 ))'q;d' $ANGLES_FILE )
 echo "\$ANGLES"
-matlab -nodesktop -nodisplay -sd "$REPOS_DIR" -r "$RUN_CMD"
+matlab -nodesktop -nodisplay -sd "$REPOS_DIR" -batch "$RUN_CMD"
 LIMITING_STRING

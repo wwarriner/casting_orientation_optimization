@@ -75,5 +75,5 @@ module load rc/matlab/R2019a
 PATHS=(${STL_PATHS[@]})
 STL_PATH=\${PATHS[\$SLURM_ARRAY_TASK_ID]}
 echo "\$STL_PATH"
-matlab -nodesktop -nodisplay -sd "$REPOS_DIR" -r "$RUN_CMD"
+matlab -nodesktop -nodisplay -sd "$REPOS_DIR" -batch "$RUN_CMD"
 LIMITING_STRING
