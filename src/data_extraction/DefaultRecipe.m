@@ -67,6 +67,11 @@ classdef DefaultRecipe < OrientationRecipeInterface
             p = containers.Map( "keytype", "char", "valuetype", "any" );
             i = containers.Map( "keytype", "char", "valuetype", "any" );
             
+            k = "feeder_interface_area";
+            area = m( "Casting_surface_area" ) + m( "Feeders_sum_surface_area" );
+            p( k ) = m( "Feeders_sum_interface_area" ) ./ area;
+            i( k ) = "linear";
+            
             k = "feeder_median_inaccessibility";
             p( k ) = 1 - m( "Feeders_median_accessibility" );
             i( k ) = "linear";
@@ -75,22 +80,17 @@ classdef DefaultRecipe < OrientationRecipeInterface
             p( k ) = 1 - m( "Feeders_min_accessibility" );
             i( k ) = "linear";
             
-            k = "feeder_interface_area";
-            area = m( "Casting_surface_area" ) + m( "Feeders_sum_surface_area" );
-            p( k ) = m( "Feeders_sum_interface_area" ) ./ area;
-            i( k ) = "linear";
-            
-            k = "parting_projected_area";
-            diff = m( "Casting_surface_area" ) - m( "Parting_area" );
-            p( k ) = diff ./ m( "Casting_surface_area" );
-            i( k ) = "linear";
-            
             k = "parting_flatness";
             p( k ) = 1 - ( 1 ./ m( "Parting_flatness" ) );
             i( k ) = "linear";
             
             k = "parting_draw";
             p( k ) = m( "Parting_draw" ) ./ ( 2 * m( "Casting_bounding_sphere_diameter" ) );
+            i( k ) = "linear";
+            
+            k = "parting_projected_area";
+            diff = m( "Casting_surface_area" ) - m( "Parting_area" );
+            p( k ) = diff ./ m( "Casting_surface_area" );
             i( k ) = "linear";
             
             k = "undercut_count";
