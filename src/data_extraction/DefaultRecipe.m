@@ -68,7 +68,7 @@ classdef DefaultRecipe < OrientationRecipeInterface
             i = containers.Map( "keytype", "char", "valuetype", "any" );
             
             k = "feeder_interface_area";
-            area = m( "Casting_surface_area" ) + m( "Feeders_sum_surface_area" );
+            area = m( "Feeders_count" ) .* m( "Casting_surface_area" );
             p( k ) = m( "Feeders_sum_interface_area" ) ./ area;
             i( k ) = "linear";
             
