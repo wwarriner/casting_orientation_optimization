@@ -9,7 +9,6 @@ OUTPUT_FOLDER = "C:\Users\wwarr\Desktop\images";
 prepare_folder( OUTPUT_FOLDER );
 
 %% LOAD
-extremes = nan( ood.objective_count, 2 * numel( ood_files ) );
 for i = 1 : numel( ood_files )
     
     ood_file = ood_files( i );
